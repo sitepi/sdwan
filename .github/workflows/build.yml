@@ -24,15 +24,21 @@ jobs:
     
     - name: Setup OpenWrt SDK
       run: |
-        # Download OpenWrt SDK (using x86_64 as build platform)
+        # Download OpenWrt SDK
         wget https://downloads.openwrt.org/releases/23.05.2/targets/x86/64/openwrt-sdk-23.05.2-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz
         
         # 确保目标目录不存在
         rm -rf sdk
+        rm -rf openwrt-sdk-*
         
-        # 解压并重命名
+        # 解压
         tar xf openwrt-sdk-*.tar.xz
-        mv openwrt-sdk-* sdk
+        
+        # 获取解压后的目录名
+        SDK_DIR=$(ls -d openwrt-sdk-*)
+        
+        # 移动到 sdk 目录
+        mv "$SDK_DIR" sdk
         
         cd sdk
         # Update feeds
