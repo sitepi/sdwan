@@ -1,0 +1,19 @@
+{
+    "luci-app-sitepi": {
+        "description": "Grant access to SitePi SDWAN",
+        "read": {
+            "ubus": {
+                "service": [ "list" ]
+            },
+            "uci": [ "sitepi" ],
+            "file": {
+                "/var/run/sitepi_*": [ "read" ],
+                "/etc/init.d/sitepi": [ "exec" ],
+                "/usr/bin/sitepi": [ "exec" ]
+            }
+        },
+        "write": {
+            "uci": [ "sitepi" ]
+        }
+    }
+} 

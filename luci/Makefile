@@ -18,4 +18,22 @@ LUCI_CATEGORY:=Services
 
 include $(TOPDIR)/feeds/luci/luci.mk
 
+# Install ACL file
+define Package/$(PKG_NAME)/postinst
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] || {
+    rm -f /tmp/luci-indexcache
+    rm -f /tmp/luci-modulecache/*
+    chmod 755 /etc/init.d/sitepi >/dev/null 2>&1
+    /etc/init.d/sitepi enable >/dev/null 2>&1
+    exit 0
+}
+endef
+
+define Package/$(PKG_NAME)/install
+    $(call Package/luci-base/install,$(1))
+    $(INSTALL_DIR) $(1)/usr/share/rpcd/acl.d
+    $(INSTALL_DATA) ./root/usr/share/rpcd/acl.d/luci-app-sitepi.json $(1)/usr/share/rpcd/acl.d/
+endef
+
 # call BuildPackage - OpenWrt buildroot signature 
