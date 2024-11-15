@@ -1,11 +1,8 @@
 name: Build IPK packages
 
 on:
-  push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
+  release:
+    types: [created]
 
 jobs:
   build:
@@ -36,7 +33,7 @@ jobs:
         cd sdk
         # Update feeds
         ./scripts/feeds update -a
-        ./scripts/feeds install -a
+        ./scripts/feeds install -a luci-base luci-lib-base luci-lib-ip luci-lib-jsonc luci-lib-nixio
         
         # Copy source code
         mkdir -p package/sitepi
@@ -48,18 +45,22 @@ jobs:
       run: |
         cd sdk
         
-        # Configure build options
+        # Configure build options (minimal configuration)
         cat >> .config <<EOF
+        CONFIG_ALL=n
         CONFIG_PACKAGE_sitepi=y
         CONFIG_PACKAGE_luci-app-sitepi=y
         CONFIG_PACKAGE_luci-i18n-sitepi-zh-cn=y
-        CONFIG_PACKAGE_wireguard-tools=m
-        CONFIG_PACKAGE_curl=m
+        CONFIG_PACKAGE_luci-base=y
+        CONFIG_PACKAGE_luci-lib-base=y
+        CONFIG_PACKAGE_luci-lib-ip=y
+        CONFIG_PACKAGE_luci-lib-jsonc=y
+        CONFIG_PACKAGE_luci-lib-nixio=y
         EOF
         
         make defconfig
-        make package/sitepi/compile V=s
-        make package/luci-app-sitepi/compile V=s
+        make package/sitepi/compile -j$(nproc)
+        make package/luci-app-sitepi/compile -j$(nproc)
 
     - name: Prepare Release Files
       run: |
@@ -83,22 +84,15 @@ jobs:
         
         # Create version info file
         echo "SitePi SDWAN Packages" > Release
-        echo "Version: $(date +%Y%m%d)" >> Release
+        echo "Version: ${GITHUB_REF#refs/tags/}" >> Release
         echo "Architecture: all" >> Release
 
-    - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: sitepi-packages
-        path: release/packages/
-
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Upload Release Assets
       uses: softprops/action-gh-release@v1
       with:
         files: release/packages/*
         body: |
-          SitePi SDWAN Release
+          SitePi SDWAN Release ${GITHUB_REF#refs/tags/}
           
           Files included:
           - sitepi (standalone program)
