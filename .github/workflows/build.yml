@@ -1,8 +1,9 @@
 name: Build IPK packages
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -87,12 +88,14 @@ jobs:
         echo "Version: ${GITHUB_REF#refs/tags/}" >> Release
         echo "Architecture: all" >> Release
 
-    - name: Upload Release Assets
+    - name: Upload to Release
       uses: softprops/action-gh-release@v1
       with:
-        files: release/packages/*
+        tag_name: ${{ github.ref_name }}
+        files: |
+          release/packages/*
         body: |
-          SitePi SDWAN Release ${GITHUB_REF#refs/tags/}
+          SitePi SDWAN Release ${{ github.ref_name }}
           
           Files included:
           - sitepi (standalone program)
