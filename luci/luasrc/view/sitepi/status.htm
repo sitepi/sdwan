@@ -1,0 +1,92 @@
+<%#
+ Copyright 2024 SitePi Team
+ Licensed to the public under the MIT License.
+-%>
+
+<%+header%>
+
+<h2><%:SitePi SDWAN Status%></h2>
+<div class="cbi-map-descr"><%:Current status of SitePi SDWAN instances%></div>
+
+<div class="cbi-section">
+    <div id="instances_status">
+        <em><%:Collecting data...%></em>
+    </div>
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+    var instances_status = document.getElementById('instances_status');
+    
+    function renderInstance(instance) {
+        var html = '<div class="instance-section">';
+        html += '<h3>' + instance.name + ' (' + instance.interface + 
+                (instance.host ? ' - ' + instance.host : '') + ')</h3>';
+        
+        html += '<div class="table">';
+        html += '<div class="tr table-titles">';
+        html += '<div class="th"><%:Public Key%></div>';
+        html += '<div class="th"><%:Endpoint%></div>';
+        html += '<div class="th"><%:Latest Handshake%></div>';
+        html += '</div>';
+        
+        if (instance.peers && instance.peers.length > 0) {
+            instance.peers.forEach(function(peer) {
+                html += '<div class="tr">';
+                html += '<div class="td">' + (peer.public_key || '-') + '</div>';
+                html += '<div class="td">' + (peer.endpoint || '-') + '</div>';
+                html += '<div class="td">' + (peer.latest_handshake || '-') + '</div>';
+                html += '</div>';
+            });
+        } else {
+            html += '<div class="tr"><div class="td" colspan="3"><em><%:No peers connected%></em></div></div>';
+        }
+        
+        html += '</div></div>';
+        return html;
+    }
+    
+    XHR.poll(5, '<%=luci.dispatcher.build_url("admin", "services", "sitepi", "status_data")%>', null,
+        function(x, data) {
+            if (data && data.instances) {
+                var html = '';
+                if (data.instances.length > 0) {
+                    data.instances.forEach(function(instance) {
+                        html += renderInstance(instance);
+                    });
+                } else {
+                    html = '<em><%:No active instances%></em>';
+                }
+                instances_status.innerHTML = html;
+            }
+        }
+    );
+//]]>
+</script>
+
+<style type="text/css">
+    .instance-section {
+        margin-bottom: 2em;
+    }
+    .instance-section h3 {
+        margin-bottom: 0.5em;
+        color: #333;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 0.3em;
+    }
+    .instance-section .table {
+        width: 100%;
+        margin-bottom: 1em;
+    }
+    .instance-section .tr.table-titles {
+        background-color: #eee;
+    }
+    .instance-section .th {
+        font-weight: bold;
+    }
+    .instance-section .td, .instance-section .th {
+        padding: 0.5em;
+    }
+</style>
+
+<%+footer%> 

@@ -1,0 +1,192 @@
+#!/bin/bash
+
+# SitePi SDWAN Service Script for Ubuntu
+# Supports multiple instances
+
+# Default config directory
+CONFIG_DIR="/etc/sitepi"
+PROG="/usr/bin/sitepi"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Check dependencies
+check_dependencies() {
+    local missing=""
+    
+    if ! command -v wg >/dev/null 2>&1; then
+        missing="$missing wireguard-tools"
+    fi
+    
+    if ! command -v curl >/dev/null 2>&1; then
+        missing="$missing curl"
+    fi
+    
+    if [ -n "$missing" ]; then
+        echo -e "${RED}Missing dependencies:${NC} $missing"
+        echo -e "Please install with: ${YELLOW}apt-get install $missing${NC}"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Read instance config
+read_config() {
+    local config="$1"
+    local section="$2"
+    
+    # Read values from config file
+    if [ -f "$config" ]; then
+        local enabled=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^enabled/) print \$2}" "$config" | tr -d ' ')
+        local interface=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^interface/) print \$2}" "$config" | tr -d ' ')
+        local host=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^host/) print \$2}" "$config" | tr -d ' ')
+        local network_id=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^network_id/) print \$2}" "$config" | tr -d ' ')
+        
+        echo "enabled=$enabled"
+        echo "interface=$interface"
+        echo "host=$host"
+        echo "network_id=$network_id"
+    fi
+}
+
+# Start an instance
+start_instance() {
+    local section="$1"
+    local config="$CONFIG_DIR/config"
+    
+    # Read instance config
+    eval "$(read_config "$config" "$section")"
+    
+    # Check if instance is enabled
+    if [ "$enabled" != "true" ]; then
+        return 0
+    fi
+    
+    # Check required parameters
+    if [ -z "$interface" ]; then
+        echo -e "${RED}Error: interface is required for instance $section${NC}"
+        return 1
+    fi
+    
+    # Check if already running
+    if pgrep -f "sitepi.*-i $interface" >/dev/null; then
+        echo -e "${YELLOW}Instance $section is already running${NC}"
+        return 0
+    fi
+    
+    # Build command
+    local cmd="$PROG -i $interface"
+    [ -n "$host" ] && cmd="$cmd -h $host"
+    [ -n "$network_id" ] && cmd="$cmd -n $network_id"
+    
+    # Start instance
+    echo -e "${GREEN}Starting instance $section...${NC}"
+    nohup $cmd >/var/log/sitepi-$section.log 2>&1 &
+    
+    # Check if started successfully
+    sleep 1
+    if pgrep -f "sitepi.*-i $interface" >/dev/null; then
+        echo -e "${GREEN}Instance $section started successfully${NC}"
+    else
+        echo -e "${RED}Failed to start instance $section${NC}"
+        return 1
+    fi
+}
+
+# Stop an instance
+stop_instance() {
+    local section="$1"
+    local config="$CONFIG_DIR/config"
+    
+    # Read instance config
+    eval "$(read_config "$config" "$section")"
+    
+    if [ -n "$interface" ]; then
+        echo -e "${GREEN}Stopping instance $section...${NC}"
+        pkill -f "sitepi.*-i $interface"
+    fi
+}
+
+# Show instance status
+show_status() {
+    local section="$1"
+    local config="$CONFIG_DIR/config"
+    
+    # Read instance config
+    eval "$(read_config "$config" "$section")"
+    
+    echo "Instance $section:"
+    echo "  Enabled: $enabled"
+    echo "  Interface: $interface"
+    if [ -n "$interface" ]; then
+        echo -n "  Running: "
+        if pgrep -f "sitepi.*-i $interface" >/dev/null; then
+            echo -e "${GREEN}yes${NC}"
+        else
+            echo -e "${RED}no${NC}"
+        fi
+    fi
+    echo "  Host: ${host:-not set}"
+    echo "  Network ID: ${network_id:-not set}"
+    echo
+}
+
+# Main function
+main() {
+    local action="$1"
+    local instance="$2"
+    
+    # Check dependencies
+    check_dependencies || exit 1
+    
+    # Create config directory if not exists
+    [ -d "$CONFIG_DIR" ] || mkdir -p "$CONFIG_DIR"
+    
+    case "$action" in
+        start)
+            if [ -n "$instance" ]; then
+                start_instance "$instance"
+            else
+                # Start all enabled instances
+                for section in $(awk -F '[][]' '/^\[.*\]/ {print $2}' "$CONFIG_DIR/config" 2>/dev/null); do
+                    start_instance "$section"
+                done
+            fi
+            ;;
+        stop)
+            if [ -n "$instance" ]; then
+                stop_instance "$instance"
+            else
+                # Stop all instances
+                pkill -f "sitepi.*-i"
+                echo -e "${GREEN}All instances stopped${NC}"
+            fi
+            ;;
+        restart)
+            $0 stop "$instance"
+            sleep 1
+            $0 start "$instance"
+            ;;
+        status)
+            if [ -n "$instance" ]; then
+                show_status "$instance"
+            else
+                # Show all instances status
+                for section in $(awk -F '[][]' '/^\[.*\]/ {print $2}' "$CONFIG_DIR/config" 2>/dev/null); do
+                    show_status "$section"
+                done
+            fi
+            ;;
+        *)
+            echo "Usage: $0 {start|stop|restart|status} [instance]"
+            exit 1
+            ;;
+    esac
+}
+
+# Run main function
+main "$@" 

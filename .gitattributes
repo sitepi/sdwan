@@ -1,0 +1,50 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Force bash and shell scripts to use LF
+*.sh text eol=lf
+*.ubuntu text eol=lf
+sitepi text eol=lf
+/package/sitepi/files/sitepi text eol=lf
+/package/sitepi/files/* text eol=lf
+/luci/root/etc/* text eol=lf
+
+# Force documentation to use LF
+*.md text eol=lf
+INTRODUCTION* text eol=lf
+README* text eol=lf
+LICENSE* text eol=lf
+CONTRIBUTING* text eol=lf
+CHANGELOG* text eol=lf
+
+# Force Lua scripts to use LF
+*.lua text eol=lf
+
+# Force HTML templates to use LF
+*.htm text eol=lf
+
+# Force translation files to use LF
+*.po text eol=lf
+
+# Force yaml files to use LF
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Force Makefiles to use LF
+Makefile text eol=lf
+*.mk text eol=lf
+
+# Force configuration files to use LF
+*.config text eol=lf
+*.init text eol=lf
+
+# Force batch scripts to use CRLF
+*.{cmd,[cC][mM][dD]} text eol=crlf
+*.{bat,[bB][aA][tT]} text eol=crlf
+
+# Denote all files that are truly binary and should not be modified
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.ipk binary 

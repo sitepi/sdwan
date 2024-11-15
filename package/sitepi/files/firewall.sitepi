@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Allow WireGuard UDP traffic
+iptables -I INPUT -p udp -m multiport --dports 10000:60000 -m comment --comment "Allow WireGuard UDP" -j ACCEPT
+ip6tables -I INPUT -p udp -m multiport --dports 10000:60000 -m comment --comment "Allow WireGuard UDP" -j ACCEPT
+
+# Allow established connections
+iptables -I INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+ip6tables -I INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+# Save rules
+/etc/init.d/firewall reload 

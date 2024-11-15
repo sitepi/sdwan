@@ -1,0 +1,120 @@
+name: Build IPK packages
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Build Environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential ccache ecj fastjar file g++ gawk \
+          gettext git libelf-dev libncurses5-dev libssl-dev python3 unzip wget \
+          python3-distutils python3-setuptools python3-dev rsync
+    
+    - name: Setup OpenWrt SDK
+      run: |
+        # Download OpenWrt SDK (using x86_64 as build platform)
+        wget https://downloads.openwrt.org/releases/22.03.5/targets/x86/64/openwrt-sdk-22.03.5-x86-64_gcc-11.2.0_musl.Linux-x86_64.tar.xz
+        tar xf openwrt-sdk-*.tar.xz
+        mv openwrt-sdk-* sdk
+        
+        cd sdk
+        # Update feeds
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        
+        # Copy source code
+        mkdir -p package/sitepi
+        cp -r ../package/sitepi/* package/sitepi/
+        mkdir -p package/luci-app-sitepi
+        cp -r ../luci/* package/luci-app-sitepi/
+
+    - name: Build Packages
+      run: |
+        cd sdk
+        
+        # Configure build options
+        cat >> .config <<EOF
+        CONFIG_PACKAGE_sitepi=y
+        CONFIG_PACKAGE_luci-app-sitepi=y
+        CONFIG_PACKAGE_luci-i18n-sitepi-zh-cn=y
+        CONFIG_PACKAGE_wireguard-tools=m
+        CONFIG_PACKAGE_curl=m
+        EOF
+        
+        make defconfig
+        make package/sitepi/compile V=s
+        make package/luci-app-sitepi/compile V=s
+
+    - name: Prepare Release Files
+      run: |
+        mkdir -p release/packages
+        cd release/packages
+        
+        # Copy IPK packages
+        cp ../../sdk/bin/packages/*/base/sitepi_*.ipk ./
+        cp ../../sdk/bin/packages/*/base/luci-app-sitepi_*.ipk ./
+        cp ../../sdk/bin/packages/*/base/luci-i18n-sitepi-zh-cn_*.ipk ./
+        
+        # Copy standalone programs and scripts
+        cp ../../package/sitepi/files/sitepi ./sitepi
+        cp ../../install.sh ./install.sh
+        cp ../../sitepi.ubuntu ./sitepi.ubuntu
+        chmod +x ./sitepi ./install.sh ./sitepi.ubuntu
+        
+        # Generate package index
+        ../../sdk/scripts/ipkg-make-index.sh . > Packages
+        gzip -9c Packages > Packages.gz
+        
+        # Create version info file
+        echo "SitePi SDWAN Packages" > Release
+        echo "Version: $(date +%Y%m%d)" >> Release
+        echo "Architecture: all" >> Release
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: sitepi-packages
+        path: release/packages/
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release/packages/*
+        body: |
+          SitePi SDWAN Release
+          
+          Files included:
+          - sitepi (standalone program)
+          - sitepi.ubuntu (Ubuntu service script)
+          - install.sh (Ubuntu installation script)
+          - sitepi_*.ipk (compatible with all platforms)
+          - luci-app-sitepi_*.ipk
+          - luci-i18n-sitepi-zh-cn_*.ipk
+          - Packages
+          - Packages.gz
+          
+          Usage:
+          1. OpenWrt:
+             - Download and install IPK files directly
+             - Or use this release page as opkg software source
+          
+          2. Ubuntu:
+             - Run install.sh for automatic installation
+             - Or use sitepi.ubuntu for manual service management
+          
+          3. Other platforms:
+             - Download the standalone sitepi program
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

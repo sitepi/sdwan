@@ -1,0 +1,65 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+msgid "SitePi SDWAN"
+msgstr "SitePi SDWAN"
+
+msgid "Configure SitePi SDWAN client instances"
+msgstr "配置 SitePi SDWAN 客户端实例"
+
+msgid "Global Settings"
+msgstr "全局设置"
+
+msgid "Instances"
+msgstr "实例"
+
+msgid "Enable"
+msgstr "启用"
+
+msgid "Name"
+msgstr "名称"
+
+msgid "Name must only contain alphanumeric characters and underscore"
+msgstr "名称只能包含字母、数字和下划线"
+
+msgid "Server Host"
+msgstr "服务器地址"
+
+msgid "Interface"
+msgstr "接口"
+
+msgid "Network ID"
+msgstr "网络 ID"
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Current status of SitePi SDWAN instances"
+msgstr "SitePi SDWAN 实例当前状态"
+
+msgid "Public Key"
+msgstr "公钥"
+
+msgid "Endpoint"
+msgstr "端点"
+
+msgid "Latest Handshake"
+msgstr "最近握手"
+
+msgid "No peers connected"
+msgstr "没有连接的节点"
+
+msgid "No active instances"
+msgstr "没有活动的实例"
+
+msgid "Collecting data..."
+msgstr "正在收集数据..."
+
+msgid "Optional"
+msgstr "可选"
+
+msgid "Invalid host format"
+msgstr "无效的服务器地址格式"
+
+msgid "Configure SitePi SDWAN client instances. Please configure WireGuard interface settings in Network -> Interfaces."
+msgstr "配置 SitePi SDWAN 客户端实例。请在 网络 -> 接口 中配置 WireGuard 接口设置。" 
