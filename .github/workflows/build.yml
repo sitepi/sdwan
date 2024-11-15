@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,14 +25,14 @@ jobs:
     - name: Setup OpenWrt SDK
       run: |
         # Download OpenWrt SDK (using x86_64 as build platform)
-        wget https://downloads.openwrt.org/releases/22.03.5/targets/x86/64/openwrt-sdk-22.03.5-x86-64_gcc-11.2.0_musl.Linux-x86_64.tar.xz
+        wget https://downloads.openwrt.org/releases/23.05.2/targets/x86/64/openwrt-sdk-23.05.2-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz
         
         # 确保目标目录不存在
         rm -rf sdk
         
         # 解压并重命名
         tar xf openwrt-sdk-*.tar.xz
-        mv openwrt-sdk-22.03.5-x86-64_gcc-11.2.0_musl.Linux-x86_64 sdk
+        mv openwrt-sdk-* sdk
         
         cd sdk
         # Update feeds
@@ -84,13 +87,6 @@ jobs:
         cp ../../sitepi.ubuntu ./sitepi.ubuntu
         chmod +x ./sitepi ./install.sh ./sitepi.ubuntu
         
-        # Generate package index (with error handling)
-        if ! ../../sdk/scripts/ipkg-make-index.sh . > Packages; then
-          echo "Warning: Failed to generate Packages index"
-          touch Packages
-        fi
-        gzip -9c Packages > Packages.gz
-        
         # Create version info file
         echo "SitePi SDWAN Packages" > Release
         echo "Version: ${GITHUB_REF#refs/tags/}" >> Release
@@ -112,13 +108,10 @@ jobs:
           - sitepi_*.ipk (compatible with all platforms)
           - luci-app-sitepi_*.ipk
           - luci-i18n-sitepi-zh-cn_*.ipk (if available)
-          - Packages
-          - Packages.gz
           
           Usage:
           1. OpenWrt:
              - Download and install IPK files directly
-             - Or use this release page as opkg software source
           
           2. Ubuntu:
              - Run install.sh for automatic installation
