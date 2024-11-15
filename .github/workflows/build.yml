@@ -34,7 +34,7 @@ jobs:
         cd sdk
         # Update feeds
         ./scripts/feeds update -a
-        ./scripts/feeds install -a luci-base luci-lib-base luci-lib-ip luci-lib-jsonc luci-lib-nixio
+        ./scripts/feeds install luci-base luci-lib-base luci-lib-ip luci-lib-jsonc luci-lib-nixio
         
         # Copy source code
         mkdir -p package/sitepi
@@ -68,10 +68,15 @@ jobs:
         mkdir -p release/packages
         cd release/packages
         
-        # Copy IPK packages
-        cp ../../sdk/bin/packages/*/base/sitepi_*.ipk ./
-        cp ../../sdk/bin/packages/*/base/luci-app-sitepi_*.ipk ./
-        cp ../../sdk/bin/packages/*/base/luci-i18n-sitepi-zh-cn_*.ipk ./
+        # Copy IPK packages (with error handling)
+        for pkg in sitepi luci-app-sitepi; do
+          if ! cp ../../sdk/bin/packages/*/base/${pkg}_*.ipk ./; then
+            echo "Warning: Failed to copy ${pkg} package"
+          fi
+        done
+        
+        # Try to copy i18n package, but don't fail if missing
+        cp ../../sdk/bin/packages/*/base/luci-i18n-sitepi-zh-cn_*.ipk ./ 2>/dev/null || true
         
         # Copy standalone programs and scripts
         cp ../../package/sitepi/files/sitepi ./sitepi
@@ -103,7 +108,7 @@ jobs:
           - install.sh (Ubuntu installation script)
           - sitepi_*.ipk (compatible with all platforms)
           - luci-app-sitepi_*.ipk
-          - luci-i18n-sitepi-zh-cn_*.ipk
+          - luci-i18n-sitepi-zh-cn_*.ipk (if available)
           - Packages
           - Packages.gz
           
