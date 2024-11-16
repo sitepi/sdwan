@@ -105,22 +105,7 @@ jobs:
         
         # 创建 systemd 服务文件
         mkdir -p DEBIAN/systemd/system
-        cat > DEBIAN/systemd/system/sitepi.service <<EOF
-[Unit]
-Description=SitePi SDWAN Client
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/sitepi.ubuntu start
-ExecStop=/usr/bin/sitepi.ubuntu stop
-RemainAfterExit=yes
-Restart=on-failure
-RestartSec=30
-
-[Install]
-WantedBy=multi-user.target
-EOF
+        cp linux/sitepi.ubuntu DEBIAN/systemd/system/sitepi.service
 
         # 复制执行文件并设置权限
         mkdir -p deb-package/usr/bin
@@ -139,7 +124,7 @@ EOF
         find sdk/bin/packages -name "sitepi_*.ipk" -exec cp {} artifacts/ \;
         find sdk/bin/packages -name "luci-app-sitepi_*.ipk" -exec cp {} artifacts/ \;
         # 收集 DEB 包
-        cp deb-package.deb artifacts/
+        cp deb-package.deb artifacts/sitepi_${{ github.ref_name }}_all.deb
 
     - name: Calculate SHA256
       id: sha

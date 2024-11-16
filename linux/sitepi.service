@@ -1,0 +1,14 @@
+[Unit]
+Description=SitePi SDWAN Client
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sitepi.ubuntu start
+ExecStop=/usr/bin/sitepi.ubuntu stop
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
