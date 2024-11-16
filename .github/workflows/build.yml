@@ -20,7 +20,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
           gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
-          file wget lua5.1 liblua5.1-0-dev
+          file wget liblua5.1-0-dev lua5.1 luarocks
 
     - name: Cache OpenWrt SDK
       id: cache-sdk
@@ -30,15 +30,6 @@ jobs:
           openwrt-sdk-*.tar.xz
           sdk
         key: ${{ runner.os }}-openwrt-sdk-${{ hashFiles('version.txt') }}
-
-    - name: Cache build dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/pip
-          ~/.npm
-          ~/.composer
-        key: ${{ runner.os }}-deps-${{ hashFiles('**/package.json', '**/composer.json') }}
 
     - name: Download OpenWrt SDK
       if: steps.cache-sdk.outputs.cache-hit != 'true'
@@ -54,9 +45,12 @@ jobs:
         mv openwrt-sdk-* sdk
         cd sdk
         
-        # 只更新必要的 feeds
-        ./scripts/feeds update luci
-        ./scripts/feeds install -a -p luci
+        # 配置 feeds
+        echo "src-git-full luci https://git.openwrt.org/project/luci.git^ab768751" > feeds.conf
+        
+        # 更新和安装 feeds
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
         
         # 创建必要的符号链接
         mkdir -p package/sitepi
@@ -67,6 +61,21 @@ jobs:
     - name: Build package
       run: |
         cd sdk
+        
+        # 确保 staging_dir 存在
+        [ -d staging_dir ] || mkdir -p staging_dir
+        
+        # 配置编译选项
+        cat > .config <<EOF
+        CONFIG_PACKAGE_lua=y
+        CONFIG_PACKAGE_luci-base=y
+        CONFIG_PACKAGE_luci-lib-base=y
+        CONFIG_PACKAGE_luci-lib-ip=y
+        CONFIG_PACKAGE_luci-lib-jsonc=y
+        CONFIG_PACKAGE_luci-lib-nixio=y
+        CONFIG_PACKAGE_luci-lib-web=y
+        EOF
+        
         make defconfig
         make package/sitepi/compile V=s
         make package/luci-app-sitepi/compile V=s
