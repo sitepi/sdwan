@@ -45,10 +45,11 @@ jobs:
         mv openwrt-sdk-* sdk
         cd sdk
         
-        # 配置 feeds
-        echo "src-git-full luci https://git.openwrt.org/project/luci.git^ab768751" > feeds.conf
+        # 使用默认的 feeds.conf.default
+        cp feeds.conf.default feeds.conf
         
         # 更新和安装 feeds
+        ./scripts/feeds clean
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         
@@ -67,6 +68,8 @@ jobs:
         
         # 配置编译选项
         cat > .config <<EOF
+        CONFIG_ALL_NONSHARED=y
+        CONFIG_ALL=y
         CONFIG_PACKAGE_lua=y
         CONFIG_PACKAGE_luci-base=y
         CONFIG_PACKAGE_luci-lib-base=y
@@ -74,11 +77,14 @@ jobs:
         CONFIG_PACKAGE_luci-lib-jsonc=y
         CONFIG_PACKAGE_luci-lib-nixio=y
         CONFIG_PACKAGE_luci-lib-web=y
+        CONFIG_PACKAGE_luci=y
+        CONFIG_PACKAGE_luci-mod-admin-full=y
+        CONFIG_PACKAGE_luci-theme-bootstrap=y
         EOF
         
         make defconfig
-        make package/sitepi/compile V=s
-        make package/luci-app-sitepi/compile V=s
+        make package/sitepi/compile V=s || make package/sitepi/compile V=s
+        make package/luci-app-sitepi/compile V=s || make package/luci-app-sitepi/compile V=s
 
     - name: Collect artifacts
       run: |
