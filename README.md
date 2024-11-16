@@ -32,14 +32,14 @@ WireGuard is included by default, no additional installation needed.
 
 ### Ubuntu/Linux
 ```bash
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0-full.deb
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
 ```
 
 - The architecture is platform-independent, not limited to amd64(also supports arm64, armhf, etc.).
 
 #### Installation
 ```bash
-sudo dpkg -i sitepi_0.1.0-full.deb
+sudo dpkg -i sitepi_0.1.0_all.deb
 sudo apt-get install -f  # Install missing dependencies
 ```
 
@@ -55,7 +55,7 @@ sudo sitepi.ubuntu status [network]
 1. Download the packages
 ```bash
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.ipk
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_1.0.0_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_0.1.0_all.ipk
 ```
 
 - The architecture is platform-independent. All routers use the same ipk.
@@ -63,7 +63,7 @@ wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_1.
 2. Install the packages
 ```bash
 opkg install sitepi_0.1.0_all.ipk
-opkg install luci-app-sitepi_1.0.0_all.ipk
+opkg install luci-app-sitepi_0.1.0_all.ipk
 ```
 
 ## Configuration

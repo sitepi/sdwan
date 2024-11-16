@@ -5,16 +5,16 @@
 
 logger -t sitepi "Network $INTERFACE $ACTION, restarting SitePi instances..."
 
-# 获取所有启用的实例
-enabled_instances=""
+# Get all enabled networks
+enabled_networks=""
 config_load 'sitepi'
 
 config_get_bool global_enabled 'global' 'enabled' '0'
 [ "$global_enabled" = "1" ] || exit 0
 
-config_foreach get_enabled_instances 'instance'
+config_foreach get_enabled_networks 'network'
 
-get_enabled_instances() {
+get_enabled_networks() {
     local cfg="$1"
     local enabled name
     
@@ -24,17 +24,17 @@ get_enabled_instances() {
     config_get name "$cfg" 'name'
     [ -n "$name" ] || return 0
     
-    enabled_instances="$enabled_instances $name"
+    enabled_networks="$enabled_networks $name"
 }
 
-if [ -n "$enabled_instances" ]; then
+if [ -n "$enabled_networks" ]; then
     case "$ACTION" in
         ifup)
-            # 网络恢复时重启服务
+            # Restart service when network is up
             /etc/init.d/sitepi restart
             ;;
         ifdown)
-            # 网络断开时停止服务
+            # Stop service when network is down
             /etc/init.d/sitepi stop
             ;;
     esac
