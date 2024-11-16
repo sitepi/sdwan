@@ -8,50 +8,47 @@ service_triggers() {
     procd_add_reload_trigger "sitepi"
 }
 
-check_instance() {
+check_network() {
     local cfg="$1"
-    local enabled name interface network_id
+    local enabled interface
     
     config_get_bool enabled "$cfg" 'enabled' '0'
     [ "$enabled" -eq 1 ] || return 0
     
-    config_get name "$cfg" 'name'
     config_get interface "$cfg" 'interface'
     
     # 检查必要参数
-    [ -n "$name" ] || { logger -t "sitepi[$name]" "Error: name is required"; return 1; }
-    [ -n "$interface" ] || { logger -t "sitepi[$name]" "Error: interface is required"; return 1; }
+    [ -n "$interface" ] || { logger -t "sitepi[$cfg]" "Error: interface is required"; return 1; }
     
     # 检查依赖
     if ! command -v wg >/dev/null 2>&1; then
-        logger -t "sitepi[$name]" "Error: wireguard-tools not found"
+        logger -t "sitepi[$cfg]" "Error: wireguard-tools not found"
         return 1
     fi
     
     if ! command -v curl >/dev/null 2>&1; then
-        logger -t "sitepi[$name]" "Error: curl not found"
+        logger -t "sitepi[$cfg]" "Error: curl not found"
         return 1
     fi
     
     return 0
 }
 
-start_instance() {
+start_network() {
     local cfg="$1"
-    local enabled name host interface network_id
+    local enabled host interface network_id
     
     config_get_bool enabled "$cfg" 'enabled' '0'
     [ "$enabled" -eq 1 ] || return 0
     
-    config_get name "$cfg" 'name'
     config_get host "$cfg" 'host'
     config_get interface "$cfg" 'interface'
     config_get network_id "$cfg" 'network_id'
     
-    # 检查实例配置
-    check_instance "$cfg" || return 1
+    # 检查网络配置
+    check_network "$cfg" || return 1
     
-    procd_open_instance "$name"
+    procd_open_instance "$cfg"
     procd_set_param command $PROG
     [ -n "$host" ] && procd_append_param command -h "$host"
     procd_append_param command -i "$interface"
@@ -61,7 +58,7 @@ start_instance() {
     procd_set_param stderr 1
     procd_close_instance
     
-    logger -t "sitepi[$name]" "Instance started"
+    logger -t "sitepi[$cfg]" "Network started"
 }
 
 start_service() {
@@ -71,11 +68,48 @@ start_service() {
     config_get_bool enabled 'global' 'enabled' '0'
     [ "$enabled" -eq 1 ] || return 1
     
-    config_foreach start_instance 'instance'
+    config_foreach start_network 'network'
 }
 
 stop_service() {
-    logger -t sitepi "All instances stopped"
+    # 首先尝试优雅地终止进程
+    local pids=$(pgrep -f "^$PROG")
+    if [ -n "$pids" ]; then
+        logger -t sitepi "Stopping sitepi processes..."
+        
+        # 发送 SIGTERM 信号
+        kill $pids 2>/dev/null
+        
+        # 等待进程退出，最多等待 5 秒
+        local timeout=5
+        while [ $timeout -gt 0 ]; do
+            if ! pgrep -f "^$PROG" >/dev/null 2>&1; then
+                break
+            fi
+            sleep 1
+            timeout=$((timeout - 1))
+        done
+        
+        # 如果进程仍然存在，强制终止
+        if [ $timeout -eq 0 ]; then
+            logger -t sitepi "Force killing remaining processes..."
+            local remaining_pids=$(pgrep -f "^$PROG")
+            [ -n "$remaining_pids" ] && kill -9 $remaining_pids 2>/dev/null
+        fi
+    fi
+    
+    # 确保所有相关的 curl 进程也被终止
+    local curl_pids=$(pgrep -f "curl.*sitepi")
+    if [ -n "$curl_pids" ]; then
+        logger -t sitepi "Stopping related curl processes..."
+        kill $curl_pids 2>/dev/null
+        sleep 1
+        # 强制终止仍在运行的 curl 进程
+        curl_pids=$(pgrep -f "curl.*sitepi")
+        [ -n "$curl_pids" ] && kill -9 $curl_pids 2>/dev/null
+    fi
+    
+    logger -t sitepi "All networks stopped"
 }
 
 reload_service() {
@@ -90,18 +124,17 @@ status() {
     config_get_bool enabled 'global' 'enabled' '0'
     echo "Global status: $([ "$enabled" -eq 1 ] && echo "enabled" || echo "disabled")"
     
-    config_foreach print_instance_status 'instance'
+    config_foreach print_network_status 'network'
 }
 
-print_instance_status() {
+print_network_status() {
     local cfg="$1"
-    local enabled name interface
+    local enabled interface
     
     config_get_bool enabled "$cfg" 'enabled' '0'
-    config_get name "$cfg" 'name'
     config_get interface "$cfg" 'interface'
     
-    echo "Instance $name:"
+    echo "Network $cfg:"
     echo "  Enabled: $([ "$enabled" -eq 1 ] && echo "yes" || echo "no")"
     echo "  Interface: $interface"
     echo "  Running: $(pgrep -f "sitepi.*-i $interface" >/dev/null && echo "yes" || echo "no")"

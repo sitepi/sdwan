@@ -1,0 +1,62 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+msgid "SitePi SDWAN"
+msgstr "SitePi SDWAN"
+
+msgid "Configure SitePi SDWAN client networks"
+msgstr "SitePi SDWAN クライアントネットワークを設定"
+
+msgid "Global Settings"
+msgstr "グローバル設定"
+
+msgid "Networks"
+msgstr "ネットワーク"
+
+msgid "Enable"
+msgstr "有効"
+
+msgid "Server Host"
+msgstr "サーバーホスト"
+
+msgid "Interface"
+msgstr "インターフェース"
+
+msgid "Network Token"
+msgstr "ネットワークトークン"
+
+msgid "Current status of SitePi SDWAN instances"
+msgstr "SitePi SDWAN インスタンスの現在の状態"
+
+msgid "Public Key"
+msgstr "公開鍵"
+
+msgid "Endpoint"
+msgstr "エンドポイント"
+
+msgid "Latest Handshake"
+msgstr "最新のハンドシェイク"
+
+msgid "No peers connected"
+msgstr "ピア接続なし"
+
+msgid "No active instances"
+msgstr "アクティブなインスタンスなし"
+
+msgid "Collecting data..."
+msgstr "データ収集中..."
+
+msgid "Optional"
+msgstr "オプション"
+
+msgid "Invalid host format"
+msgstr "無効なホスト形式"
+
+msgid "Configure SitePi SDWAN client instances. Please configure WireGuard interface settings in Network -> Interfaces."
+msgstr "SitePi SDWAN クライアントインスタンスを設定します。WireGuard インターフェース設定は ネットワーク -> インターフェース で行ってください。"
+
+msgid "Description"
+msgstr "説明"
+
+msgid "Optional description"
+msgstr "オプションの説明"
