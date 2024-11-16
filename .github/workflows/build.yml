@@ -98,7 +98,7 @@ jobs:
         # 创建 DEB 包的控制文件
         mkdir -p DEBIAN
         echo "Package: sitepi" > DEBIAN/control
-        echo "Version: ${{ github.ref_name }}" >> DEBIAN/control
+        echo "Version: ${GITHUB_REF_NAME#v}" >> DEBIAN/control
         echo "Architecture: all" >> DEBIAN/control
         echo "Maintainer: Jie Song <jsong@routerplus.com>" >> DEBIAN/control
         echo "Description: SitePi SDWAN Client" >> DEBIAN/control
