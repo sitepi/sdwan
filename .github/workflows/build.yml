@@ -159,9 +159,14 @@ jobs:
           - luci-app-sitepi_${{ github.ref_name }}_all.ipk
           - sitepi_${{ github.ref_name }}_all.deb
           
+          #### OpenWrt
           ```bash
           opkg install sitepi_${{ github.ref_name }}_all.ipk
           opkg install luci-app-sitepi_${{ github.ref_name }}_all.ipk
+          ```
+          
+          #### Ubuntu
+          ```bash
           dpkg -i sitepi_${{ github.ref_name }}_all.deb
           ```
           
