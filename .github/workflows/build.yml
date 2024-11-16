@@ -87,6 +87,7 @@ jobs:
         CONFIG_PACKAGE_luci-theme-bootstrap=y
         EOF
         
+        make defconfig
         make package/sitepi/compile V=s || make package/sitepi/compile V=s
         make package/luci-app-sitepi/compile V=s || make package/luci-app-sitepi/compile V=s
 
@@ -104,16 +105,17 @@ jobs:
         echo "Depends: wireguard-tools" >> DEBIAN/control
         
         # 创建 systemd 服务文件
-        mkdir -p DEBIAN/systemd/system
-        cp linux/sitepi.ubuntu DEBIAN/systemd/system/sitepi.service
-
+        mkdir -p etc/systemd/system
+        cp $GITHUB_WORKSPACE/linux/sitepi.service etc/systemd/system/
+        
         # 复制执行文件并设置权限
-        mkdir -p deb-package/usr/bin
-        cp package/sitepi/files/sitepi deb-package/usr/bin/sitepi
-        cp linux/sitepi.ubuntu deb-package/usr/bin/sitepi.ubuntu
-        chmod +x deb-package/usr/bin/sitepi
-        chmod +x deb-package/usr/bin/sitepi.ubuntu
-
+        mkdir -p usr/bin
+        cp $GITHUB_WORKSPACE/package/sitepi/files/sitepi usr/bin/
+        cp $GITHUB_WORKSPACE/linux/sitepi.ubuntu usr/bin/
+        chmod +x usr/bin/sitepi
+        chmod +x usr/bin/sitepi.ubuntu
+        
+        cd ..
         # 创建 DEB 包
         dpkg-deb --build deb-package
 
