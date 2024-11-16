@@ -27,13 +27,24 @@ jobs:
           gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
           file wget liblua5.1-0-dev lua5.1 luarocks
 
+    - name: Cache OpenWrt SDK
+      id: cache-sdk
+      uses: actions/cache@v4
+      with:
+        path: |
+          openwrt-sdk-*.tar.xz
+          sdk
+        key: ${{ runner.os }}-openwrt-sdk-23.05.2  # 使用 OpenWrt 的版本号作为键值
+
     - name: Download OpenWrt SDK
+      if: steps.cache-sdk.outputs.cache-hit != 'true'
       run: |
         SDK_URL="https://downloads.openwrt.org/releases/23.05.2/targets/x86/64/openwrt-sdk-23.05.2-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
         curl -L -o openwrt-sdk.tar.xz "$SDK_URL"
         echo "SDK_HASH=$(sha256sum openwrt-sdk.tar.xz | cut -d' ' -f1)" >> $GITHUB_ENV
 
     - name: Setup SDK
+      if: steps.cache-sdk.outputs.cache-hit != 'true'
       run: |
         tar xf openwrt-sdk.tar.xz
         mv openwrt-sdk-* sdk
@@ -115,7 +126,7 @@ jobs:
         find sdk/bin/packages -name "sitepi_*.ipk" -exec cp {} artifacts/ \;
         find sdk/bin/packages -name "luci-app-sitepi_*.ipk" -exec cp {} artifacts/ \;
         # 收集 DEB 包
-        cp deb-package.deb artifacts/sitepi_${{ github.ref_name }}_all.deb
+        cp deb-package.deb artifacts/sitepi_${GITHUB_REF_NAME#v}_all.deb
 
     - name: List artifacts
       run: |
