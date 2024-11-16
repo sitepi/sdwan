@@ -90,26 +90,70 @@ jobs:
         make package/sitepi/compile V=s || make package/sitepi/compile V=s
         make package/luci-app-sitepi/compile V=s || make package/luci-app-sitepi/compile V=s
 
+    - name: Build Ubuntu DEB package
+      run: |
+        mkdir -p deb-package
+        cd deb-package
+        # 创建 DEB 包的控制文件
+        mkdir -p DEBIAN
+        echo "Package: sitepi" > DEBIAN/control
+        echo "Version: ${{ github.ref_name }}" >> DEBIAN/control
+        echo "Architecture: all" >> DEBIAN/control
+        echo "Maintainer: Jie Song <jsong@routerplus.com>" >> DEBIAN/control
+        echo "Description: SitePi SDWAN Client" >> DEBIAN/control
+        echo "Depends: wireguard-tools" >> DEBIAN/control
+        
+        # 创建 systemd 服务文件
+        mkdir -p DEBIAN/systemd/system
+        cat > DEBIAN/systemd/system/sitepi.service <<EOF
+[Unit]
+Description=SitePi SDWAN Client
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sitepi.ubuntu start
+ExecStop=/usr/bin/sitepi.ubuntu stop
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+        # 复制执行文件并设置权限
+        mkdir -p deb-package/usr/bin
+        cp package/sitepi/files/sitepi deb-package/usr/bin/sitepi
+        cp linux/sitepi.ubuntu deb-package/usr/bin/sitepi.ubuntu
+        chmod +x deb-package/usr/bin/sitepi
+        chmod +x deb-package/usr/bin/sitepi.ubuntu
+
+        # 创建 DEB 包
+        dpkg-deb --build deb-package
+
     - name: Collect artifacts
       run: |
         mkdir -p artifacts
         # 只收集特定的包
         find sdk/bin/packages -name "sitepi_*.ipk" -exec cp {} artifacts/ \;
         find sdk/bin/packages -name "luci-app-sitepi_*.ipk" -exec cp {} artifacts/ \;
+        # 收集 DEB 包
+        cp deb-package.deb artifacts/
 
     - name: Calculate SHA256
       id: sha
       run: |
         cd artifacts
         echo "SUMS<<EOF" >> $GITHUB_OUTPUT
-        sha256sum *.ipk >> $GITHUB_OUTPUT
+        sha256sum *.ipk *.deb >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Upload to GitHub Assets
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: artifacts/*.ipk
+        files: artifacts/*.ipk artifacts/*.deb
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
         draft: false
@@ -121,10 +165,12 @@ jobs:
           Download and install the following packages:
           - sitepi_${{ github.ref_name }}_all.ipk
           - luci-app-sitepi_${{ github.ref_name }}_all.ipk
+          - sitepi_${{ github.ref_name }}_all.deb
           
           ```bash
           opkg install sitepi_${{ github.ref_name }}_all.ipk
           opkg install luci-app-sitepi_${{ github.ref_name }}_all.ipk
+          dpkg -i sitepi_${{ github.ref_name }}_all.deb
           ```
           
           ### SHA256 Checksums
@@ -138,5 +184,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: packages
-        path: artifacts/*.ipk
+        path: artifacts/*.ipk artifacts/*.deb
         retention-days: 7

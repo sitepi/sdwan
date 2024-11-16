@@ -30,6 +30,12 @@ WireGuard is included by default, no additional installation needed.
 
 ## Installation
 
+### Docker
+```bash
+docker pull sitepi/sdwan:latest
+docker run --rm -it --privileged sitepi/sdwan -i wg0
+```
+
 ### Ubuntu/Linux
 ```bash
 curl https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi -o sitepi
@@ -54,24 +60,8 @@ opkg install sitepi_0.1.0-1_all.ipk
 opkg install luci-app-sitepi_1.0.0-1_all.ipk
 ```
 
-#### Method 2: Build from source
-1. Add feed to OpenWrt
-```bash
-echo "src-git sitepi https://github.com/sitepi/sdwan.git" >> feeds.conf.default
-./scripts/feeds update -a
-./scripts/feeds install -a
-```
-
-2. Configure and build
-```bash
-make menuconfig
-# Go to Network -> sitepi
-# Go to LuCI -> Applications -> luci-app-sitepi
-make package/sitepi/compile V=s
-make package/luci-app-sitepi/compile V=s
-```
-
-The compiled packages will be in `bin/packages/ARCH/base/`.
+### Ubuntu DEB Package
+- Ubuntu DEB 包与 OpenWrt 的 IPK 包是相同的，可以跨硬件平台使用，架构为全平台，不局限于 amd64。
 
 ## Configuration
 
