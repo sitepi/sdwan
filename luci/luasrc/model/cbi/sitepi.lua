@@ -13,11 +13,12 @@ o.rmempty = false
 o.default = "0"
 
 -- Network List
-s = m:section(NamedSection, "network", translate("Networks"))
+s = m:section(TypedSection, "network", translate("Networks"))
 s.anonymous = false
 s.addremove = true
 s.template = "cbi/tblsection"
 s.sectiontype = "network"
+s.extedit = luci.dispatcher.build_url("admin", "services", "sitepi", "networks", "%s")
 
 o = s:option(Flag, "enabled", translate("Enable"))
 o.rmempty = false
@@ -61,7 +62,7 @@ o.validate = function(self, value, section)
     end
     return nil, translate("Interface name cannot be empty")
 end
-o.width = "30%"
+o.width = "20%"
 
 o = s:option(Value, "network_id", translate("Network Token"))
 o.rmempty = true
@@ -72,6 +73,6 @@ o.password = true
 o = s:option(Value, "description", translate("Description"))
 o.rmempty = true
 o.placeholder = translate("Optional description")
-o.width = "30%"
+o.width = "20%"
 
 return m 
