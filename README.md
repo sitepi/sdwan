@@ -59,9 +59,8 @@ wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_1.
 opkg install sitepi_0.1.0-1_all.ipk
 opkg install luci-app-sitepi_1.0.0-1_all.ipk
 ```
-
 ### Ubuntu DEB Package
-- Ubuntu DEB 包与 OpenWrt 的 IPK 包是相同的，可以跨硬件平台使用，架构为全平台，不局限于 amd64。
+- The architecture is platform-independent, not limited to amd64.
 
 ## Configuration
 
