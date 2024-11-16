@@ -27,24 +27,13 @@ jobs:
           gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
           file wget liblua5.1-0-dev lua5.1 luarocks
 
-    - name: Cache OpenWrt SDK
-      id: cache-sdk
-      uses: actions/cache@v4
-      with:
-        path: |
-          openwrt-sdk-*.tar.xz
-          sdk
-        key: ${{ runner.os }}-openwrt-sdk-${{ hashFiles('version.txt') }}
-
     - name: Download OpenWrt SDK
-      if: steps.cache-sdk.outputs.cache-hit != 'true'
       run: |
         SDK_URL="https://downloads.openwrt.org/releases/23.05.2/targets/x86/64/openwrt-sdk-23.05.2-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
         curl -L -o openwrt-sdk.tar.xz "$SDK_URL"
         echo "SDK_HASH=$(sha256sum openwrt-sdk.tar.xz | cut -d' ' -f1)" >> $GITHUB_ENV
 
     - name: Setup SDK
-      if: steps.cache-sdk.outputs.cache-hit != 'true'
       run: |
         tar xf openwrt-sdk.tar.xz
         mv openwrt-sdk-* sdk
