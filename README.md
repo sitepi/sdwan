@@ -4,6 +4,7 @@ A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client i
 
 ## Features
 
+- WireGuard-based
 - Intelligent traffic routing
 - QoS (Quality of Service) management
 - Real-time network monitoring
@@ -56,6 +57,8 @@ sudo sitepi.ubuntu status [network]
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.ipk
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_1.0.0_all.ipk
 ```
+
+- The architecture is platform-independent. All routers use the same ipk.
 
 2. Install the packages
 ```bash
