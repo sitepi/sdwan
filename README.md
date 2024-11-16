@@ -30,37 +30,39 @@ WireGuard is included by default, no additional installation needed.
 
 ## Installation
 
-### Docker
-```bash
-docker pull sitepi/sdwan:latest
-docker run --rm -it --privileged sitepi/sdwan -i wg0
-```
-
 ### Ubuntu/Linux
 ```bash
-curl https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi -o sitepi
-chmod +x sitepi
-sudo mv sitepi /usr/bin/sitepi
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0-full.deb
+```
 
-sudo sitepi -i wg0
+- The architecture is platform-independent, not limited to amd64(also supports arm64, armhf, etc.).
+
+#### Installation
+```bash
+sudo dpkg -i sitepi_0.1.0-full.deb
+sudo apt-get install -f  # Install missing dependencies
+```
+
+#### Usage
+```bash
+sudo sitepi.ubuntu start [network]
+sudo sitepi.ubuntu stop [network]
+sudo sitepi.ubuntu restart [network]
+sudo sitepi.ubuntu status [network]
 ```
 
 ### OpenWrt
-
-#### Method 1: Install from package
 1. Download the packages
 ```bash
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0-1_all.ipk
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_1.0.0-1_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_1.0.0_all.ipk
 ```
 
 2. Install the packages
 ```bash
-opkg install sitepi_0.1.0-1_all.ipk
-opkg install luci-app-sitepi_1.0.0-1_all.ipk
+opkg install sitepi_0.1.0_all.ipk
+opkg install luci-app-sitepi_1.0.0_all.ipk
 ```
-### Ubuntu DEB Package
-- The architecture is platform-independent, not limited to amd64.
 
 ## Configuration
 

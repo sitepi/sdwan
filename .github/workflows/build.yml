@@ -3,13 +3,13 @@ name: Build
 on:
   push:
     tags:
-      - 'v*'  # 匹配所有以 v 开头的标签，如 v1.0.0
-  workflow_dispatch:  # 保留手动触发选项
+      - 'v*'  # Match all tags starting with v, e.g. v1.0.0
+  workflow_dispatch:  # Keep manual trigger option
 
-# 添加权限配置
+# Add permissions configuration
 permissions:
-  contents: write  # 允许工作流写入仓库内容（包括创建发布）
-  packages: write  # 如果需要的话，允许发布包
+  contents: write  # Allow workflow to write repository content (including creating releases)
+  packages: write  # Allow package publishing if needed
 
 jobs:
   build:
@@ -34,7 +34,7 @@ jobs:
         path: |
           openwrt-sdk-*.tar.xz
           sdk
-        key: ${{ runner.os }}-openwrt-sdk-23.05.2  # 使用 OpenWrt 的版本号作为键值
+        key: ${{ runner.os }}-openwrt-sdk-23.05.2  # Use OpenWrt version number as key
 
     - name: Download OpenWrt SDK
       if: steps.cache-sdk.outputs.cache-hit != 'true'
@@ -50,15 +50,15 @@ jobs:
         mv openwrt-sdk-* sdk
         cd sdk
         
-        # 使用默认的 feeds.conf.default
+        # Use default feeds.conf.default
         cp feeds.conf.default feeds.conf
         
-        # 更新和安装 feeds
+        # Update and install feeds
         ./scripts/feeds clean
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         
-        # 创建必要的符号链接
+        # Create necessary symbolic links
         mkdir -p package/sitepi
         ln -sf $GITHUB_WORKSPACE/package/sitepi/* package/sitepi/
         mkdir -p package/luci-app-sitepi
@@ -68,10 +68,10 @@ jobs:
       run: |
         cd sdk
         
-        # 确保 staging_dir 存在
+        # Ensure staging_dir exists
         [ -d staging_dir ] || mkdir -p staging_dir
         
-        # 配置编译选项
+        # Configure build options
         cat > .config <<EOF
         CONFIG_ALL_NONSHARED=y
         CONFIG_ALL=y
@@ -95,7 +95,7 @@ jobs:
       run: |
         mkdir -p deb-package
         cd deb-package
-        # 创建 DEB 包的控制文件
+        # Create DEB package control file
         mkdir -p DEBIAN
         echo "Package: sitepi" > DEBIAN/control
         echo "Version: ${GITHUB_REF_NAME#v}" >> DEBIAN/control
@@ -104,11 +104,15 @@ jobs:
         echo "Description: SitePi SDWAN Client" >> DEBIAN/control
         echo "Depends: wireguard-tools" >> DEBIAN/control
         
-        # 创建 systemd 服务文件
+        # Create systemd service file
         mkdir -p etc/systemd/system
         cp $GITHUB_WORKSPACE/linux/sitepi.service etc/systemd/system/
         
-        # 复制执行文件并设置权限
+        # Create configuration file
+        mkdir -p etc/sitepi
+        cp $GITHUB_WORKSPACE/linux/config.init etc/sitepi/config
+        
+        # Copy executable files and set permissions
         mkdir -p usr/bin
         cp $GITHUB_WORKSPACE/package/sitepi/files/sitepi usr/bin/
         cp $GITHUB_WORKSPACE/linux/sitepi.ubuntu usr/bin/
@@ -116,16 +120,16 @@ jobs:
         chmod +x usr/bin/sitepi.ubuntu
         
         cd ..
-        # 创建 DEB 包
+        # Create DEB package
         dpkg-deb --build deb-package
 
     - name: Collect artifacts
       run: |
         mkdir -p artifacts
-        # 只收集特定的包
+        # Only collect specific packages
         find sdk/bin/packages -name "sitepi_*.ipk" -exec cp {} artifacts/ \;
         find sdk/bin/packages -name "luci-app-sitepi_*.ipk" -exec cp {} artifacts/ \;
-        # 收集 DEB 包
+        # Collect DEB package
         cp deb-package.deb artifacts/sitepi_${GITHUB_REF_NAME#v}_all.deb
 
     - name: List artifacts

@@ -1,0 +1,4 @@
+
+[sdwan1]
+enabled=true
+interface=wg0

@@ -34,7 +34,7 @@ check_dependencies() {
     return 0
 }
 
-# Read instance config
+# Read network config
 read_config() {
     local config="$1"
     local section="$2"
@@ -46,6 +46,10 @@ read_config() {
         local host=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^host/) print \$2}" "$config" | tr -d ' ')
         local network_id=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^network_id/) print \$2}" "$config" | tr -d ' ')
         
+        # Set default values if not found
+        enabled=${enabled:-true}  # 默认启用
+        interface=${interface:-wg0}  # 默认接口为 eth0
+        
         echo "enabled=$enabled"
         echo "interface=$interface"
         echo "host=$host"
@@ -53,28 +57,28 @@ read_config() {
     fi
 }
 
-# Start an instance
-start_instance() {
+# Start a network
+start_network() {
     local section="$1"
     local config="$CONFIG_DIR/config"
     
-    # Read instance config
+    # Read network config
     eval "$(read_config "$config" "$section")"
     
-    # Check if instance is enabled
+    # Check if network is enabled
     if [ "$enabled" != "true" ]; then
         return 0
     fi
     
     # Check required parameters
     if [ -z "$interface" ]; then
-        echo -e "${RED}Error: interface is required for instance $section${NC}"
+        echo -e "${RED}Error: interface is required for network $section${NC}"
         return 1
     fi
     
     # Check if already running
     if pgrep -f "sitepi.*-i $interface" >/dev/null; then
-        echo -e "${YELLOW}Instance $section is already running${NC}"
+        echo -e "${YELLOW}Network $section is already running${NC}"
         return 0
     fi
     
@@ -83,43 +87,43 @@ start_instance() {
     [ -n "$host" ] && cmd="$cmd -h $host"
     [ -n "$network_id" ] && cmd="$cmd -n $network_id"
     
-    # Start instance
-    echo -e "${GREEN}Starting instance $section...${NC}"
+    # Start network
+    echo -e "${GREEN}Starting network $section...${NC}"
     nohup $cmd >/var/log/sitepi-$section.log 2>&1 &
     
     # Check if started successfully
     sleep 1
     if pgrep -f "sitepi.*-i $interface" >/dev/null; then
-        echo -e "${GREEN}Instance $section started successfully${NC}"
+        echo -e "${GREEN}Network $section started successfully${NC}"
     else
-        echo -e "${RED}Failed to start instance $section${NC}"
+        echo -e "${RED}Failed to start network $section${NC}"
         return 1
     fi
 }
 
-# Stop an instance
-stop_instance() {
+# Stop a network
+stop_network() {
     local section="$1"
     local config="$CONFIG_DIR/config"
     
-    # Read instance config
+    # Read network config
     eval "$(read_config "$config" "$section")"
     
     if [ -n "$interface" ]; then
-        echo -e "${GREEN}Stopping instance $section...${NC}"
+        echo -e "${GREEN}Stopping network $section...${NC}"
         pkill -f "sitepi.*-i $interface"
     fi
 }
 
-# Show instance status
+# Show network status
 show_status() {
     local section="$1"
     local config="$CONFIG_DIR/config"
     
-    # Read instance config
+    # Read network config
     eval "$(read_config "$config" "$section")"
     
-    echo "Instance $section:"
+    echo "Network $section:"
     echo "  Enabled: $enabled"
     echo "  Interface: $interface"
     if [ -n "$interface" ]; then
@@ -138,7 +142,7 @@ show_status() {
 # Main function
 main() {
     local action="$1"
-    local instance="$2"
+    local network="$2"
     
     # Check dependencies
     check_dependencies || exit 1
@@ -148,41 +152,41 @@ main() {
     
     case "$action" in
         start)
-            if [ -n "$instance" ]; then
-                start_instance "$instance"
+            if [ -n "$network" ]; then
+                start_network "$network"
             else
-                # Start all enabled instances
+                # Start all enabled networks
                 for section in $(awk -F '[][]' '/^\[.*\]/ {print $2}' "$CONFIG_DIR/config" 2>/dev/null); do
-                    start_instance "$section"
+                    start_network "$section"
                 done
             fi
             ;;
         stop)
-            if [ -n "$instance" ]; then
-                stop_instance "$instance"
+            if [ -n "$network" ]; then
+                stop_network "$network"
             else
-                # Stop all instances
+                # Stop all networks
                 pkill -f "sitepi.*-i"
-                echo -e "${GREEN}All instances stopped${NC}"
+                echo -e "${GREEN}All networks stopped${NC}"
             fi
             ;;
         restart)
-            $0 stop "$instance"
+            $0 stop "$network"
             sleep 1
-            $0 start "$instance"
+            $0 start "$network"
             ;;
         status)
-            if [ -n "$instance" ]; then
-                show_status "$instance"
+            if [ -n "$network" ]; then
+                show_status "$network"
             else
-                # Show all instances status
+                # Show all networks status
                 for section in $(awk -F '[][]' '/^\[.*\]/ {print $2}' "$CONFIG_DIR/config" 2>/dev/null); do
                     show_status "$section"
                 done
             fi
             ;;
         *)
-            echo "Usage: $0 {start|stop|restart|status} [instance]"
+            echo "Usage: $0 {start|stop|restart|status} [network]"
             exit 1
             ;;
     esac
