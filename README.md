@@ -4,7 +4,6 @@ A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client i
 
 ## Features
 
-- Secure VPN connectivity
 - Intelligent traffic routing
 - QoS (Quality of Service) management
 - Real-time network monitoring
