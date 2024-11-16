@@ -6,6 +6,11 @@ on:
       - 'v*'  # 匹配所有以 v 开头的标签，如 v1.0.0
   workflow_dispatch:  # 保留手动触发选项
 
+# 添加权限配置
+permissions:
+  contents: write  # 允许工作流写入仓库内容（包括创建发布）
+  packages: write  # 如果需要的话，允许发布包
+
 jobs:
   build:
     runs-on: ubuntu-latest
