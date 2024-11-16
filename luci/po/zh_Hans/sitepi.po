@@ -16,8 +16,8 @@ msgstr "网络"
 msgid "Enable"
 msgstr "启用"
 
-msgid "Server Host"
-msgstr "服务器地址"
+msgid "Controller"
+msgstr "控制器"
 
 msgid "Interface"
 msgstr "接口"
@@ -49,8 +49,8 @@ msgstr "正在收集数据..."
 msgid "Optional"
 msgstr "可选"
 
-msgid "Invalid host format"
-msgstr "无效的服务器地址格式"
+msgid "Invalid controller format"
+msgstr "无效的控制器格式"
 
 msgid "Configure SitePi SDWAN client instances. Please configure WireGuard interface settings in Network -> Interfaces."
 msgstr "配置 SitePi SDWAN 客户端实例。请在 网络 -> 接口 中配置 WireGuard 接口设置。"

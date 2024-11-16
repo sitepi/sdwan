@@ -25,9 +25,9 @@ o.rmempty = false
 o.default = "0"
 o.width = "10%"
 
-o = s:option(Value, "host", translate("Server Host"))
+o = s:option(Value, "host", translate("Controller"))
 o.rmempty = true
-o.placeholder = "sdwan.sitepi.cn"
+o.placeholder = "https://sdwan.sitepi.cn"
 o.datatype = "host"
 o.validate = function(self, value, section)
     if value and #value > 0 then

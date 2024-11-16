@@ -16,8 +16,8 @@ msgstr "ネットワーク"
 msgid "Enable"
 msgstr "有効"
 
-msgid "Server Host"
-msgstr "サーバーホスト"
+msgid "Controller"
+msgstr "コントローラー"
 
 msgid "Interface"
 msgstr "インターフェース"
@@ -49,8 +49,8 @@ msgstr "データ収集中..."
 msgid "Optional"
 msgstr "オプション"
 
-msgid "Invalid host format"
-msgstr "無効なホスト形式"
+msgid "Invalid controller format"
+msgstr "無効なコントローラー形式"
 
 msgid "Configure SitePi SDWAN client instances. Please configure WireGuard interface settings in Network -> Interfaces."
 msgstr "SitePi SDWAN クライアントインスタンスを設定します。WireGuard インターフェース設定は ネットワーク -> インターフェース で行ってください。"

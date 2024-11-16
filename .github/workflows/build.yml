@@ -87,7 +87,6 @@ jobs:
         CONFIG_PACKAGE_luci-theme-bootstrap=y
         EOF
         
-        make defconfig
         make package/sitepi/compile V=s || make package/sitepi/compile V=s
         make package/luci-app-sitepi/compile V=s || make package/luci-app-sitepi/compile V=s
 

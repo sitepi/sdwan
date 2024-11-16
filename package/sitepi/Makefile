@@ -13,7 +13,7 @@ define Package/$(PKG_NAME)
   SECTION:=net
   CATEGORY:=Network
   TITLE:=SitePi SDWAN Client
-  DEPENDS:=+curl +wireguard-tools
+  DEPENDS:=+curl +wireguard-tools +ca-certificates
   PKGARCH:=all
 endef
 
