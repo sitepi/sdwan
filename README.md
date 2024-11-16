@@ -68,7 +68,7 @@ opkg install luci-app-sitepi_1.0.0_all.ipk
 
 ### Command Line
 ```bash
-sitepi -h sitepi.cn -i wg0 [-n network_id]
+sitepi -i wg0 [-n network_id]
 ```
 
 ### OpenWrt Web Interface
@@ -76,8 +76,8 @@ sitepi -h sitepi.cn -i wg0 [-n network_id]
 2. Navigate to Services -> Sitepi SDWAN
 3. Configure:
    - Enable the service
-   - Set server address
    - Set WireGuard interface name
+   - Optionally set server address
    - Optionally set network ID
 4. Save & Apply
 
