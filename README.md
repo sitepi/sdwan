@@ -35,7 +35,7 @@ WireGuard is included by default, no additional installation needed.
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
 ```
 
-- The architecture is platform-independent, not limited to amd64(also supports arm64, armhf, etc.).
+- The architecture is platform-independent, not limited to amd64(also supports arm64, MIPS, etc.).
 
 #### Installation
 ```bash
@@ -45,10 +45,15 @@ sudo apt-get install -f  # Install missing dependencies
 
 #### Usage
 ```bash
-sudo sitepi.ubuntu start [network]
-sudo sitepi.ubuntu stop [network]
-sudo sitepi.ubuntu restart [network]
-sudo sitepi.ubuntu status [network]
+sudo service sitepi {status|start|stop|restart}
+```
+or enable auto-start service
+```bash
+sudo systemctl enable sitepi.service
+```
+### Edit configuration
+```bash
+sudo vim /etc/sitepi/config.json
 ```
 
 ### OpenWrt
