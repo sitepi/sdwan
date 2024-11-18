@@ -1,4 +1,4 @@
-# SDWAN Client
+# SitePi SDWAN Client
 
 A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client implementation.
 
