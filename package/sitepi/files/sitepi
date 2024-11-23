@@ -382,7 +382,7 @@ do_authorize() {
         -H "PUBKEY: $PUBKEY" \
         -H "LISTEN-PORT: $LISTEN_PORT" \
         ${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
-        "$HOST/site/authorize" 2>&1)
+        "$HOST/authorize" 2>&1)
     status=$?
     
     # 如果IPv6连接失败,尝试IPv4
@@ -394,7 +394,7 @@ do_authorize() {
             -H "PUBKEY: $PUBKEY" \
             -H "LISTEN-PORT: $LISTEN_PORT" \
             ${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
-            "$HOST/site/authorize" 2>&1)
+            "$HOST/authorize" 2>&1)
         status=$?
     fi
     
@@ -485,9 +485,6 @@ do_sse_connect() {
         --retry 0 \
         --http1.1 \
         -H "Connection: keep-alive" \
-        -H "Keep-Alive: timeout=0, max=0" \
-        -H 'Accept: text/event-stream' \
-        -H 'Cache-Control: no-cache' \
         -H 'User-Agent: sitepi' \
         -H "X-SESSION-ID: $SESSION_ID" \
         ${TRACKER_RESOLVE:+--resolve $TRACKER_RESOLVE} \
