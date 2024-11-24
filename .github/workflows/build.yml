@@ -60,9 +60,9 @@ jobs:
         
         # Create necessary symbolic links
         mkdir -p package/sitepi
-        ln -sf $GITHUB_WORKSPACE/package/sitepi/* package/sitepi/
+        ln -sf $GITHUB_WORKSPACE/package/sitepi package/sitepi/
         mkdir -p package/luci-app-sitepi
-        ln -sf $GITHUB_WORKSPACE/package/luci-app-sitepi/* package/luci-app-sitepi/
+        ln -sf $GITHUB_WORKSPACE/package/luci-app-sitepi package/luci-app-sitepi/
 
     - name: Build package
       run: |
