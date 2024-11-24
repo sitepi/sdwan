@@ -57,12 +57,6 @@ jobs:
         ./scripts/feeds clean
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        
-        # Create necessary symbolic links
-        mkdir -p package/sitepi
-        ln -sf $GITHUB_WORKSPACE/package/sitepi package/sitepi/
-        mkdir -p package/luci-app-sitepi
-        ln -sf $GITHUB_WORKSPACE/package/luci-app-sitepi package/luci-app-sitepi/
 
     - name: Build package
       run: |
@@ -86,6 +80,13 @@ jobs:
         CONFIG_PACKAGE_luci-mod-admin-full=y
         CONFIG_PACKAGE_luci-theme-bootstrap=y
         EOF
+
+        # Create necessary symbolic links
+        rm -rf package/sitepi package/luci-app-sitepi
+        mkdir -p package/sitepi
+        cp -rf $GITHUB_WORKSPACE/package/sitepi package/sitepi/
+        mkdir -p package/luci-app-sitepi
+        cp -rf $GITHUB_WORKSPACE/package/luci-app-sitepi package/luci-app-sitepi/
         
         make defconfig
         make package/sitepi/compile V=s || make package/sitepi/compile V=s
