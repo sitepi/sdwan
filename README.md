@@ -12,6 +12,9 @@ A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client i
 - Multi-link support
 - Zero-touch provisioning
 
+## Get Network ID
+Visit https://sitepi.net to register an account, create a network, and obtain your network ID
+
 ## Requirements
 
 - Linux/OpenWrt
@@ -29,7 +32,7 @@ sudo dpkg -i sitepi_0.1.0_all.deb
 sudo systemctl enable sitepi.service
 sudo service sitepi {status|start|stop|restart}
 
-sudo vim /etc/sitepi/config.json # edit configuration
+sudo vim /etc/sitepi/config.json # edit configuration, binding your network ID
 ```
 
 ### OpenWrt
@@ -52,7 +55,7 @@ opkg install luci-app-sitepi_0.1.0_all.ipk
       - Enable the service
       - Set WireGuard interface name
       - Optionally set server address
-      - Optionally set network ID
+      - Optionally set network ID      # binding your network ID
    4. Save & Apply
 
 ## License
