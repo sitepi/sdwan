@@ -13,7 +13,7 @@ A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client i
 - Zero-touch provisioning
 
 ## Get Network ID
-Visit https://sitepi.net to register an account, create a network, and obtain your network ID
+Visit https://sitepi.net/ to register an account, create a network, and obtain your network ID
 
 ## Requirements
 
