@@ -24,15 +24,13 @@ sudo apt install -y wireguard-tools
 
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
 
-
+sudo apt install wireguard-tools curl -y # Install dependencies
 sudo dpkg -i sitepi_0.1.0_all.deb
-sudo apt-get install -f  # Install missing dependencies
-
 
 sudo systemctl enable sitepi.service
 sudo service sitepi {status|start|stop|restart}
 
-sudo vim /etc/sitepi/config.json
+sudo vim /etc/sitepi/config.json # edit configuration
 ```
 
 ### OpenWrt
@@ -40,6 +38,7 @@ WireGuard is included by default, no additional installation needed.
 
 1. Download the packages
 ```bash
+cd /tmp
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.ipk
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_0.1.0_all.ipk
 ```
@@ -52,7 +51,7 @@ opkg install sitepi_0.1.0_all.ipk
 opkg install luci-app-sitepi_0.1.0_all.ipk
 ```
 
-## Configuration
+3. Configuration
 
 ### OpenWrt Web Interface
 1. Go to LuCI web interface
