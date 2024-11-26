@@ -17,8 +17,8 @@ Visit https://sitepi.net/ to register an account, create a network, and obtain y
 sudo apt update
 sudo apt install -y wireguard-tools curl
 
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
-sudo dpkg -i sitepi_0.1.0_all.deb
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.0.1_all.deb
+sudo dpkg -i sitepi_0.0.1_all.deb
 
 sudo systemctl enable sitepi.service
 ```
@@ -34,11 +34,11 @@ sudo service sitepi {status|start|stop|restart}
 #### Download the packages and install
 ```bash
 cd /tmp
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.ipk
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_0.1.0_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.0.1_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_0.0.1_all.ipk
 
-opkg install sitepi_0.1.0_all.ipk
-opkg install luci-app-sitepi_0.1.0_all.ipk
+opkg install sitepi_0.0.1_all.ipk
+opkg install luci-app-sitepi_0.0.1_all.ipk
 ```
 
 - The architecture is platform-independent. All routers use the same ipk.

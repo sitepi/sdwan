@@ -15,8 +15,8 @@
 sudo apt update
 sudo apt install -y wireguard-tools curl
 
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
-sudo dpkg -i sitepi_0.1.0_all.deb
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.0.1_all.deb
+sudo dpkg -i sitepi_0.0.1_all.deb
 
 sudo systemctl enable sitepi.service
 ```
@@ -32,11 +32,11 @@ sudo service sitepi {status|start|stop|restart}
 #### 下载并安装
 ```bash
 cd /tmp
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.ipk
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_0.1.0_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.0.1_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_0.0.1_all.ipk
 
-opkg install sitepi_0.1.0_all.ipk
-opkg install luci-app-sitepi_0.1.0_all.ipk
+opkg install sitepi_0.0.1_all.ipk
+opkg install luci-app-sitepi_0.0.1_all.ipk
 ```
 
 - 安装文件架构是平台无关的。所有路由器使用相同的ipk。
