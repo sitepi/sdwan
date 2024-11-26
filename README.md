@@ -17,46 +17,27 @@ A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client i
 - Linux/OpenWrt
 - Network interface with root/admin privileges
 
-## Prerequisites
-
 ### Ubuntu
 ```bash
 sudo apt update
 sudo apt install -y wireguard-tools
+
+wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
+
+
+sudo dpkg -i sitepi_0.1.0_all.deb
+sudo apt-get install -f  # Install missing dependencies
+
+
+sudo systemctl enable sitepi.service
+sudo service sitepi {status|start|stop|restart}
+
+sudo vim /etc/sitepi/config.json
 ```
 
 ### OpenWrt
 WireGuard is included by default, no additional installation needed.
 
-## Installation
-
-### Ubuntu/Linux
-```bash
-wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
-```
-
-- The architecture is platform-independent, not limited to amd64(also supports arm64, MIPS, etc.).
-
-#### Installation
-```bash
-sudo dpkg -i sitepi_0.1.0_all.deb
-sudo apt-get install -f  # Install missing dependencies
-```
-
-#### Usage
-```bash
-sudo service sitepi {status|start|stop|restart}
-```
-or enable auto-start service
-```bash
-sudo systemctl enable sitepi.service
-```
-### Edit configuration
-```bash
-sudo vim /etc/sitepi/config.json
-```
-
-### OpenWrt
 1. Download the packages
 ```bash
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.ipk
@@ -72,11 +53,6 @@ opkg install luci-app-sitepi_0.1.0_all.ipk
 ```
 
 ## Configuration
-
-### Command Line
-```bash
-sitepi -i wg0 [-n network_id]
-```
 
 ### OpenWrt Web Interface
 1. Go to LuCI web interface
