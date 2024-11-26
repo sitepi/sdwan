@@ -33,24 +33,19 @@ sudo vim /etc/sitepi/config.json # edit configuration
 ```
 
 ### OpenWrt
-WireGuard is included by default, no additional installation needed.
-
-1. Download the packages
+#### Download the packages and install
 ```bash
 cd /tmp
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.ipk
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/luci-app-sitepi_0.1.0_all.ipk
-```
 
-- The architecture is platform-independent. All routers use the same ipk.
-
-2. Install the packages
-```bash
 opkg install sitepi_0.1.0_all.ipk
 opkg install luci-app-sitepi_0.1.0_all.ipk
 ```
 
-3. Configuration
+- The architecture is platform-independent. All routers use the same ipk.
+
+#### Configuration
    1. Go to LuCI web interface
    2. Navigate to Services -> Sitepi SDWAN
    3. Configure:
