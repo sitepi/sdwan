@@ -20,11 +20,10 @@ A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client i
 ### Ubuntu
 ```bash
 sudo apt update
-sudo apt install -y wireguard-tools
+sudo apt install -y wireguard-tools curl
 
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
 
-sudo apt install wireguard-tools curl -y # Install dependencies
 sudo dpkg -i sitepi_0.1.0_all.deb
 
 sudo systemctl enable sitepi.service
