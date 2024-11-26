@@ -52,16 +52,14 @@ opkg install luci-app-sitepi_0.1.0_all.ipk
 ```
 
 3. Configuration
-
-### OpenWrt Web Interface
-1. Go to LuCI web interface
-2. Navigate to Services -> Sitepi SDWAN
-3. Configure:
-   - Enable the service
-   - Set WireGuard interface name
-   - Optionally set server address
-   - Optionally set network ID
-4. Save & Apply
+   1. Go to LuCI web interface
+   2. Navigate to Services -> Sitepi SDWAN
+   3. Configure:
+      - Enable the service
+      - Set WireGuard interface name
+      - Optionally set server address
+      - Optionally set network ID
+   4. Save & Apply
 
 ## License
 
