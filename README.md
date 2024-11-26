@@ -2,16 +2,6 @@
 
 A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client implementation.
 
-## Features
-
-- WireGuard-based
-- Intelligent traffic routing
-- QoS (Quality of Service) management
-- Real-time network monitoring
-- Automatic failover
-- Multi-link support
-- Zero-touch provisioning
-
 ## Get Network ID
 Visit https://sitepi.net/ to register an account, create a network, and obtain your network ID
 
@@ -57,6 +47,16 @@ opkg install luci-app-sitepi_0.1.0_all.ipk
       - Optionally set server address
       - Optionally set network ID      # binding your network ID
    4. Save & Apply
+
+## Features
+
+- WireGuard-based
+- Intelligent traffic routing
+- QoS (Quality of Service) management
+- Real-time network monitoring
+- Automatic failover
+- Multi-link support
+- Zero-touch provisioning
 
 ## License
 
