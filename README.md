@@ -16,13 +16,16 @@ sudo apt update
 sudo apt install -y wireguard-tools curl
 
 wget https://github.com/sitepi/sdwan/releases/download/v0.1.0/sitepi_0.1.0_all.deb
-
 sudo dpkg -i sitepi_0.1.0_all.deb
 
 sudo systemctl enable sitepi.service
-sudo service sitepi {status|start|stop|restart}
+```
 
+#### Configuration
+```bash
 sudo vim /etc/sitepi/config.json # edit configuration, binding your network ID
+
+sudo service sitepi {status|start|stop|restart}
 ```
 
 ### OpenWrt
