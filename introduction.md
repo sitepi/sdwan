@@ -125,6 +125,6 @@ Connect and manage IoT devices:
 ## Support
 
 For more information and support:
-- Documentation: https://docs.sitepi.cn
-- Community: https://community.sitepi.cn
-- Email: support@sitepi.cn
+- Documentation: https://docs.sitepi.net
+- Community: https://community.sitepi.net
+- Email: support@sitepi.net

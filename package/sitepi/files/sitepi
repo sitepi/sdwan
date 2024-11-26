@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Default parameters
-HOST="https://sdwan.sitepi.cn"
+HOST="https://sitepi.net"
 NETWORK_ID=""
 INTERFACE=""
 
@@ -474,8 +474,6 @@ do_sse_connect() {
     # --keepalive-time 20: 保持连接活跃
     # --tcp-nodelay: 禁用 Nagle 算法
     # --retry 0: 禁用自动重试
-    # -N: 禁用缓冲
-    # --raw: 不处理数据，直接输出
     # --http1.1: 使用 HTTP/1.1
     (curl --no-buffer \
         --connect-timeout 5 \

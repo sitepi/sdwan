@@ -66,14 +66,14 @@ if [ ! -f /etc/sitepi/config ]; then
 [default]
 enabled = true
 interface = sitepi
-host = sdwan.sitepi.cn
+host = sitepi.net
 network_id = 
 
 # Example of multiple instances:
 # [office]
 # enabled = true
 # interface = wg1
-# host = sdwan.sitepi.cn
+# host = sitepi.net
 # network_id = [xxxxxx]
 EOF
 fi

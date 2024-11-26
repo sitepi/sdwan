@@ -200,7 +200,7 @@ Ideal for:
 
 ## Support Resources
 
-- Documentation: https://docs.sitepi.cn
-- Community Forum: https://community.sitepi.cn
+- Documentation: https://docs.sitepi.net
+- Community Forum: https://community.sitepi.net
 - GitHub Repository: https://github.com/sitepi/sdwan
-- Email Support: support@sitepi.cn
+- Email Support: support@sitepi.net
