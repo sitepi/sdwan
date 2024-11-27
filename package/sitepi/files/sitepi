@@ -422,14 +422,14 @@ do_authorize() {
     if [ -z "$SESSION_ID" ] || [ -z "$TRACKER_URL" ] || [ -z "$ASSIGNED_IP" ]; then
         printf "\033[31mError: Failed to get complete session information\033[0m\n"
         echo "Response:"
-        echo "$response" | sed 's/^/  /'
+        #echo "$response" | sed 's/^/  /'
         clear_session
         return 1
     fi
     
     echo "  session ID: $SESSION_ID"
-    echo " tracker URL: $TRACKER_URL"
-    echo " tracker DNS: $TRACKER_RESOLVE"
+    echo "    next URL: $TRACKER_URL"
+    echo "    next DNS: $TRACKER_RESOLVE"
     echo " assigned IP: $ASSIGNED_IP"
     echo "network name: ${NETWORK_NAME:-unknown}"
     printf "\033[32mAuthorization successful\033[0m\n"
@@ -625,7 +625,7 @@ process_sse_message() {
                 fi
 
                 # 计算实际的 keepalive 值
-                keepalive=$(calculate_keepalive "$peer_pubkey" "$endpoint" "$keepalive")
+                #keepalive=$(calculate_keepalive "$peer_pubkey" "$endpoint" "$keepalive")
                 echo " peer update: $peer_pubkey $preshared_key $endpoint $allowed_ips $keepalive"
 
                 # 配置 WireGuard peer
