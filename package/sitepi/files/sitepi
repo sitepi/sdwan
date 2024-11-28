@@ -422,7 +422,7 @@ do_authorize() {
     if [ -z "$SESSION_ID" ] || [ -z "$TRACKER_URL" ] || [ -z "$ASSIGNED_IP" ]; then
         printf "\033[31mError: Failed to get complete session information\033[0m\n"
         echo "Response:"
-        #echo "$response" | sed 's/^/  /'
+        echo "$response" | sed 's/^/  /'
         clear_session
         return 1
     fi
@@ -483,6 +483,8 @@ do_sse_connect() {
         --retry 0 \
         --http1.1 \
         -H "Connection: keep-alive" \
+        -H "Keep-Alive: timeout=0, max=0" \
+        -H 'Cache-Control: no-cache' \
         -H 'User-Agent: sitepi' \
         -H "X-SESSION-ID: $SESSION_ID" \
         ${TRACKER_RESOLVE:+--resolve $TRACKER_RESOLVE} \
