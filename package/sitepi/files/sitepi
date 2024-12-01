@@ -466,25 +466,23 @@ do_sse_connect() {
     
     # 使用临时文件存储退出状态
     local tmpfile=$(mktemp)
+    echo "56" > "$tmpfile"
     
     # curl 参数说明:
     # --no-buffer: 禁用输出缓冲
     # --connect-timeout 5: 连接超时时间
     # --max-time 0: 无限等待
-    # --keepalive-time 20: 保持连接活跃
+    # --keepalive-time 25: 保持连接活跃
     # --tcp-nodelay: 禁用 Nagle 算法
     # --retry 0: 禁用自动重试
-    # --http1.1: 使用 HTTP/1.1
+    # --http2: 使用 HTTP/2
     (curl --no-buffer \
         --connect-timeout 5 \
         --max-time 0 \
-        --keepalive-time 20 \
+        --keepalive-time 25 \
         --tcp-nodelay \
         --retry 0 \
-        --http1.1 \
-        -H "Connection: keep-alive" \
-        -H "Keep-Alive: timeout=0, max=0" \
-        -H 'Cache-Control: no-cache' \
+        --http2 \
         -H 'User-Agent: sitepi' \
         -H "X-SESSION-ID: $SESSION_ID" \
         ${TRACKER_RESOLVE:+--resolve $TRACKER_RESOLVE} \
@@ -534,56 +532,9 @@ do_sse_connect() {
     esac
 }
 
-# 修改 calculate_keepalive 函数，修复重定向语法
-calculate_keepalive() {
-    local peer_pubkey="$1"
-    local endpoint="$2"
-    local keepalive="$3"
-
-    # 如果是 IPv6 地址，直接返回 120
-    if echo "$endpoint" | grep -q "^\[.*\]:[0-9]*$"; then
-        echo "120"
-        return
-    fi
-
-    # 获取所有 IPv4 peers 数量
-    local ipv4_peers=0
-    # 使用临时变量存储 wg show 的输出
-    local peers_output
-    peers_output=$(wg show "$INTERFACE" peers)
-    
-    # 遍历每一行统计 IPv4 peers
-    echo "$peers_output" | while read -r line; do
-        # 跳过空行
-        [ -z "$line" ] && continue
-        
-        # 解析 peer 的 endpoint
-        local peer_endpoint
-        peer_endpoint=$(echo "$line" | awk '{print $4}')
-        
-        # 如果 endpoint 不是 IPv6 格式且不是 (none)，则计数
-        if [ "$peer_endpoint" != "(none)" ] && ! echo "$peer_endpoint" | grep -q "^\[.*\]:[0-9]*$"; then
-            ipv4_peers=$((ipv4_peers + 1))
-        fi
-    done
-
-    # 计算基于 IPv4 peers 数量的 keepalive 值
-    # 基准值 21 秒，每个额外的 peer 增加 10 秒
-    local base_keepalive=21
-    if [ $ipv4_peers -gt 1 ]; then
-        local additional_time=$(( (ipv4_peers - 1) * 10 ))
-        echo $((base_keepalive + additional_time))
-    else
-        echo "$base_keepalive"
-    fi
-}
-
 # 修改 process_sse_message 函数中的 keepalive 处理部分
 process_sse_message() {
     local line="$1"
-    
-    # 调试输出原始消息
-    # echo "Got: '$line'"
     
     # 处理空行
     if [ -z "$line" ]; then
@@ -626,8 +577,6 @@ process_sse_message() {
                     fi
                 fi
 
-                # 计算实际的 keepalive 值
-                #keepalive=$(calculate_keepalive "$peer_pubkey" "$endpoint" "$keepalive")
                 echo " peer update: $peer_pubkey $preshared_key $endpoint $allowed_ips $keepalive"
 
                 # 配置 WireGuard peer
