@@ -77,8 +77,8 @@ stop_service() {
     if [ -n "$pids" ]; then
         logger -t sitepi "Stopping sitepi processes..."
         
-        # Send SIGTERM signal
-        kill $pids 2>/dev/null
+        # Send SIGINT signal
+        kill -SIGINT $pids 2>/dev/null
         
         # Wait for the process to exit, up to 5 seconds
         local timeout=5
@@ -102,7 +102,7 @@ stop_service() {
     local curl_pids=$(pgrep -f "curl.*sitepi")
     if [ -n "$curl_pids" ]; then
         logger -t sitepi "Stopping related curl processes..."
-        kill $curl_pids 2>/dev/null
+        kill -SIGINT $curl_pids 2>/dev/null
         sleep 1
         # Force terminate still running curl processes
         curl_pids=$(pgrep -f "curl.*sitepi")

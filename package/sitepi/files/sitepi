@@ -294,8 +294,8 @@ if [ -z "$PUBKEY" ] || [ -z "$LISTEN_PORT" ]; then
 fi
 
 echo "Using interface $INTERFACE:"
-echo "	Public key: $PUBKEY"
-echo " Listen port: $LISTEN_PORT"
+echo " Public key: $PUBKEY"
+echo "Listen port: $LISTEN_PORT"
 
 # generate random numbers
 random() {
@@ -376,7 +376,6 @@ do_authorize() {
 	# Prefer to try IPv6 connection
 	response=$(curl -6 -X POST -i -s \
 		-H 'User-Agent: sitepi' \
-		-H 'Cache-Control: no-cache' \
 		-H "PUBKEY: $PUBKEY" \
 		-H "LISTEN-PORT: $LISTEN_PORT" \
 		${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
@@ -388,7 +387,6 @@ do_authorize() {
 		printf "\033[33mIPv6 connection failed, trying IPv4...\033[0m\n"
 		response=$(curl -4 -X POST -i -s \
 			-H 'User-Agent: sitepi' \
-			-H 'Cache-Control: no-cache' \
 			-H "PUBKEY: $PUBKEY" \
 			-H "LISTEN-PORT: $LISTEN_PORT" \
 			${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
@@ -411,11 +409,11 @@ do_authorize() {
 	fi
 	
 	# Extract information from response headers
-	SESSION_ID=$(echo "$response" | grep -i '^X-SESSION-ID:' | cut -d' ' -f2 | tr -d '\r\n')
-	NEXT_URL=$(echo "$response" | grep -i '^X-TRACKER-URL:' | cut -d' ' -f2 | tr -d '\r\n')
-	NEXT_RESOLVE=$(echo "$response" | grep -i '^X-TRACKER-RESOLVE:' | cut -d' ' -f2 | tr -d '\r\n')
-	ASSIGNED_IP=$(echo "$response" | grep -i '^X-ASSIGNED-IP:' | cut -d' ' -f2 | tr -d '\r\n')
-	NETWORK_NAME=$(echo "$response" | grep -i '^X-NETWORK-NAME:' | cut -d' ' -f2 | tr -d '\r\n')
+	SESSION_ID=$(echo "$response" | grep -i '^X-SESSION:' | cut -d' ' -f2 | tr -d '\r\n')
+	NEXT_URL=$(echo "$response" | grep -i '^X-URL:' | cut -d' ' -f2 | tr -d '\r\n')
+	NEXT_PROXY=$(echo "$response" | grep -i '^X-PROXY:' | cut -d' ' -f2 | tr -d '\r\n')
+	ASSIGNED_IP=$(echo "$response" | grep -i '^X-IPADDR:' | cut -d' ' -f2 | tr -d '\r\n')
+	NETWORK_NAME=$(echo "$response" | grep -i '^X-NETWORK:' | cut -d' ' -f2 | tr -d '\r\n')
 	
 	if [ -z "$SESSION_ID" ] || [ -z "$NEXT_URL" ] || [ -z "$ASSIGNED_IP" ]; then
 		printf "\033[31mError: Failed to get complete session information\033[0m\n"
@@ -425,11 +423,11 @@ do_authorize() {
 		return 1
 	fi
 	
-	echo "	session ID: $SESSION_ID"
-	echo "	  next URL: $NEXT_URL"
-	echo "	  next DNS: $NEXT_RESOLVE"
-	echo "	 assigned IP: $ASSIGNED_IP"
-	echo "network name: ${NETWORK_NAME:-unknown}"
+	echo "  session ID: $SESSION_ID"
+	echo "    next URL: $NEXT_URL"
+	echo "  with PROXY: $NEXT_PROXY"
+	echo " assigned IP: $ASSIGNED_IP"
+	echo "network NAME: ${NETWORK_NAME:-unknown}"
 	printf "\033[32mAuthorization successful\033[0m\n"
 
 	# Configure interface IP address
@@ -481,9 +479,9 @@ do_sse_connect() {
 		--tcp-nodelay \
 		--retry 0 \
 		--http2 \
-		-H 'User-Agent: sitepi' \
-		-H "X-SESSION-ID: $SESSION_ID" \
-		${NEXT_RESOLVE:+--resolve $NEXT_RESOLVE} \
+		-H 'User-agent: sitepi' \
+		-H "X-SESSION: $SESSION_ID" \
+		${NEXT_PROXY:+-x $NEXT_PROXY} \
 		-N "$NEXT_URL" 2>/dev/null || echo $? > "$tmpfile") | while read -r line; do
 		if ! $RUNNING; then
 			break
@@ -557,7 +555,7 @@ process_sse_message() {
 		wg)
 			# Validate fields
 			if [ -n "$peer_pubkey" ] && [ -n "$keepalive" ]; then
-				# Check if it is self-public key
+				# Check if it's our own public key
 				if [ "$peer_pubkey" = "$PUBKEY" ]; then
 					echo "Skipping self as peer"
 					return 0
