@@ -11,247 +11,247 @@ MAX_DELAY=60
 
 # Help information
 show_help() {
-    echo "Usage: $0 [options]"
-    echo "Options:"
-    echo "  -h, --host        Server address (optional)"
-    echo "  -i, --interface   WireGuard interface name (required)"
-    echo "  -n, --network     Network ID (optional)"
-    echo "  --help            Show this help message"
-    echo
-    echo "Example:"
-    echo "  $0 --interface wg0"
-    exit 1
+	echo "Usage: $0 [options]"
+	echo "Options:"
+	echo "	-h, --host        Server address (optional)"
+	echo "	-i, --interface   WireGuard interface name (required)"
+	echo "	-n, --network     Network ID (optional)"
+	echo "	--help            Show this help message"
+	echo
+	echo "Example:"
+	echo "	$0 --interface wg0"
+	exit 1
 }
 
 # Validate required parameters
 validate_params() {
-    local errors=0
+	local errors=0
 
-    if [ -z "$HOST" ]; then
-        echo "Error: Server address (--host) is required"
-        errors=$((errors + 1))
-    fi
+	if [ -z "$HOST" ]; then
+		echo "Error: Server address (--host) is required"
+		errors=$((errors + 1))
+	fi
 
-    if [ -z "$INTERFACE" ]; then
-        echo "Error: WireGuard interface name (--interface) is required"
-        errors=$((errors + 1))
-    fi
+	if [ -z "$INTERFACE" ]; then
+		echo "Error: WireGuard interface name (--interface) is required"
+		errors=$((errors + 1))
+	fi
 
-    # If any errors found, show help and exit
-    if [ $errors -gt 0 ]; then
-        echo
-        show_help
-    fi
+	# If any errors found, show help and exit
+	if [ $errors -gt 0 ]; then
+		echo
+		show_help
+	fi
 }
 
 # Check root privileges
 check_root() {
-    if [ "$(id -u)" -ne 0 ]; then
-        echo "Error: Root privileges required to access WireGuard configuration"
-        exit 1
-    fi
+	if [ "$(id -u)" -ne 0 ]; then
+		echo "Error: Root privileges required to access WireGuard configuration"
+		exit 1
+	fi
 }
 
 # Check required commands
 check_commands() {
-    local missing_commands=""
-    
-    for cmd in wg ip curl; do
-        if ! command -v $cmd >/dev/null 2>&1; then
-            missing_commands="$missing_commands $cmd"
-        fi
-    done
-    
-    if [ -n "$missing_commands" ]; then
-        echo "Error: Missing required commands:$missing_commands"
-        echo "Please install the missing packages and try again"
-        exit 1
-    fi
+	local missing_commands=""
+	
+	for cmd in wg ip curl; do
+		if ! command -v $cmd >/dev/null 2>&1; then
+			missing_commands="$missing_commands $cmd"
+		fi
+	done
+	
+	if [ -n "$missing_commands" ]; then
+		echo "Error: Missing required commands:$missing_commands"
+		echo "Please install the missing packages and try again"
+		exit 1
+	fi
 }
 
 # Create WireGuard interface
 create_wg_interface() {
-    echo "Creating WireGuard interface $INTERFACE..."
-    
-    # 检查接口是否已存在
-    if ip link show "$INTERFACE" >/dev/null 2>&1; then
-        echo "Interface $INTERFACE already exists, using existing interface..."
-        # 获取现有接口的公钥
-        public_key=$(wg show "$INTERFACE" public-key)
-        if [ -z "$public_key" ]; then
-            echo "Error: Failed to get public key from existing interface"
-            exit 1
-        fi
-        echo "Using existing interface with public key: $public_key"
-        echo "$public_key"
-        return 0
-    fi
-    
-    # 尝试从 /etc/wireguard 读取配置
-    if [ -f "/etc/wireguard/$INTERFACE.conf" ]; then
-        echo "Found existing configuration in /etc/wireguard/$INTERFACE.conf"
-        
-        # 读取私钥，使用更可靠的方式解析配置文件
-        private_key=$(sed -n 's/^PrivateKey[[:space:]]*=[[:space:]]*\([^[:space:]]*\)[[:space:]]*$/\1/p' "/etc/wireguard/$INTERFACE.conf")
-        if [ -z "$private_key" ]; then
-            echo "Error: Failed to read private key from config file"
-            exit 1
-        fi
-        
-        # 验证私钥格式
-        if [ ${#private_key} -ne 44 ]; then
-            echo "Error: Invalid private key format in config file (length=${#private_key}, expected=44)"
-            exit 1
-        fi
-        
-        # 生成公钥
-        public_key=$(echo "$private_key" | wg pubkey 2>/dev/null)
-        if [ -z "$public_key" ]; then
-            echo "Error: Failed to generate public key from private key"
-            exit 1
-        fi
-        
-        echo "Using existing configuration"
-    else
-        echo "No existing configuration found, generating new keys..."
-        # 检查 WireGuard 模块是否已加载
-        if ! lsmod | grep -q wireguard; then
-            echo "Loading WireGuard kernel module..."
-            if ! modprobe wireguard; then
-                echo "Error: Failed to load WireGuard kernel module"
-                exit 1
-            fi
-            sleep 1
-        fi
-        
-        # 生成新密钥
-        private_key=$(wg genkey) || {
-            echo "Error: Failed to generate private key"
-            exit 1
-        }
-        
-        public_key=$(echo "$private_key" | wg pubkey) || {
-            echo "Error: Failed to generate public key"
-            exit 1
-        }
-        
-        # 保存配置到 /etc/wireguard
-        if [ -d "/etc/wireguard" ]; then
-            echo "Saving configuration to /etc/wireguard/$INTERFACE.conf"
-            cat > "/etc/wireguard/$INTERFACE.conf" << EOF
+	echo "Creating WireGuard interface $INTERFACE..."
+	
+	# Check if the interface already exists
+	if ip link show "$INTERFACE" >/dev/null 2>&1; then
+		echo "Interface $INTERFACE already exists, using existing interface..."
+		# Get the public key of the existing interface
+		public_key=$(wg show "$INTERFACE" public-key)
+		if [ -z "$public_key" ]; then
+			echo "Error: Failed to get public key from existing interface"
+			exit 1
+		fi
+		echo "Using existing interface with public key: $public_key"
+		echo "$public_key"
+		return 0
+	fi
+	
+	# Try to read configuration from /etc/wireguard
+	if [ -f "/etc/wireguard/$INTERFACE.conf" ]; then
+		echo "Found existing configuration in /etc/wireguard/$INTERFACE.conf"
+		
+		# Read private key, using a more reliable way to parse the config file
+		private_key=$(sed -n 's/^PrivateKey[[:space:]]*=[[:space:]]*\([^[:space:]]*\)[[:space:]]*$/\1/p' "/etc/wireguard/$INTERFACE.conf")
+		if [ -z "$private_key" ]; then
+			echo "Error: Failed to read private key from config file"
+			exit 1
+		fi
+		
+		# Validate private key format
+		if [ ${#private_key} -ne 44 ]; then
+			echo "Error: Invalid private key format in config file (length=${#private_key}, expected=44)"
+			exit 1
+		fi
+		
+		# Generate public key
+		public_key=$(echo "$private_key" | wg pubkey 2>/dev/null)
+		if [ -z "$public_key" ]; then
+			echo "Error: Failed to generate public key from private key"
+			exit 1
+		fi
+		
+		echo "Using existing configuration"
+	else
+		echo "No existing configuration found, generating new keys..."
+		# Check if the WireGuard module is loaded
+		if ! lsmod | grep -q wireguard; then
+			echo "Loading WireGuard kernel module..."
+			if ! modprobe wireguard; then
+				echo "Error: Failed to load WireGuard kernel module"
+				exit 1
+			fi
+			sleep 1
+		fi
+		
+		# Generate new keys
+		private_key=$(wg genkey) || {
+			echo "Error: Failed to generate private key"
+			exit 1
+		}
+		
+		public_key=$(echo "$private_key" | wg pubkey) || {
+			echo "Error: Failed to generate public key"
+			exit 1
+		}
+		
+		# Save configuration to /etc/wireguard
+		if [ -d "/etc/wireguard" ]; then
+			echo "Saving configuration to /etc/wireguard/$INTERFACE.conf"
+			cat > "/etc/wireguard/$INTERFACE.conf" << EOF
 [Interface]
 PrivateKey = $private_key
 EOF
-            chmod 600 "/etc/wireguard/$INTERFACE.conf"
-        fi
-    fi
-    
-    # 创建接口
-    echo "Creating new interface..."
-    if ! ip link add dev "$INTERFACE" type wireguard; then
-        echo "First attempt to create interface failed, trying again..."
-        if ! ip link add dev "$INTERFACE" type wireguard; then
-            echo "Error: Failed to create interface"
-            exit 1
-        fi
-    fi
-    
-    # 配置接口
-    echo "Configuring interface..."
-    if ! echo "$private_key" | wg set "$INTERFACE" private-key /dev/stdin; then
-        echo "Error: Failed to configure WireGuard interface"
-        ip link delete dev "$INTERFACE"
-        exit 1
-    fi
-    
-    # 启用接口
-    if ! ip link set up dev "$INTERFACE"; then
-        echo "Error: Failed to enable interface"
-        ip link delete dev "$INTERFACE"
-        exit 1
-    fi
-    
-    # 设置 MTU
-    ip link set dev "$INTERFACE" mtu 1420 2>/dev/null
-    
-    # 验证接口
-    if ! ip link show dev "$INTERFACE" >/dev/null 2>&1; then
-        echo "Error: Interface verification failed"
-        exit 1
-    fi
-    
-    # 获取系统分配的端口
-    listen_port=$(wg show "$INTERFACE" listen-port)
-    
-    echo "WireGuard interface created successfully"
+			chmod 600 "/etc/wireguard/$INTERFACE.conf"
+		fi
+	fi
+	
+	# Create the interface
+	echo "Creating new interface..."
+	if ! ip link add dev "$INTERFACE" type wireguard; then
+		echo "First attempt to create interface failed, trying again..."
+		if ! ip link add dev "$INTERFACE" type wireguard; then
+			echo "Error: Failed to create interface"
+			exit 1
+		fi
+	fi
+	
+	# Configure the interface
+	echo "Configuring interface..."
+	if ! echo "$private_key" | wg set "$INTERFACE" private-key /dev/stdin; then
+		echo "Error: Failed to configure WireGuard interface"
+		ip link delete dev "$INTERFACE"
+		exit 1
+	fi
+	
+	# Enable the interface
+	if ! ip link set up dev "$INTERFACE"; then
+		echo "Error: Failed to enable interface"
+		ip link delete dev "$INTERFACE"
+		exit 1
+	fi
+	
+	# Set MTU
+	ip link set dev "$INTERFACE" mtu 1420 2>/dev/null
+	
+	# Verify the interface
+	if ! ip link show dev "$INTERFACE" >/dev/null 2>&1; then
+		echo "Error: Interface verification failed"
+		exit 1
+	fi
+	
+	# Get the port assigned by the system
+	listen_port=$(wg show "$INTERFACE" listen-port)
+	
+	echo "WireGuard interface created successfully"
 }
 
 # Get WireGuard interface information
 get_wg_info() {
-    local wg_info=""
+	local wg_info=""
 
-    # 再次验证接口
-    if ! wg show "$INTERFACE" >/dev/null 2>&1; then
-        echo "Error: Interface verification failed after creation"
-        exit 1
-    fi
+	# Verify the interface again
+	if ! wg show "$INTERFACE" >/dev/null 2>&1; then
+		echo "Error: Interface verification failed after creation"
+		exit 1
+	fi
 
-    # Get public key and listen port
-    local public_key=$(wg show "$INTERFACE" public-key)
-    local listen_port=$(wg show "$INTERFACE" listen-port)
+	# Get public key and listen port
+	local public_key=$(wg show "$INTERFACE" public-key)
+	local listen_port=$(wg show "$INTERFACE" listen-port)
 
-    # Validate data
-    if [ -z "$public_key" ] || [ -z "$listen_port" ]; then
-        echo "Error: Failed to get complete WireGuard configuration"
-        exit 1
-    fi
+	# Validate data
+	if [ -z "$public_key" ] || [ -z "$listen_port" ]; then
+		echo "Error: Failed to get complete WireGuard configuration"
+		exit 1
+	fi
 
-    # 回格式化的输出
-    printf "%s:%s\n" "$public_key" "$listen_port"
+	# Return formatted output
+	printf "%s:%s\n" "$public_key" "$listen_port"
 }
 
 # Cleanup function
 cleanup() {
-    echo
-    echo "\033[33mPerforming cleanup...\033[0m"
-    exit 0
+	echo
+	echo "\033[33mPerforming cleanup...\033[0m"
+	exit 0
 }
 
 # Parse command line arguments
 while [ $# -gt 0 ]; do
-    case $1 in
-        -h|--host)
-            HOST="$2"
-            if [ -z "$HOST" ]; then
-                echo "Error: --host requires a value"
-                show_help
-            fi
-            shift 2
-            ;;
-        -i|--interface)
-            INTERFACE="$2"
-            if [ -z "$INTERFACE" ]; then
-                echo "Error: --interface requires a value"
-                show_help
-            fi
-            shift 2
-            ;;
-        -n|--network)
-            NETWORK_ID="$2"
-            if [ -z "$NETWORK_ID" ]; then
-                echo "Error: --network requires a value"
-                show_help
-            fi
-            shift 2
-            ;;
-        --help)
-            show_help
-            ;;
-        *)
-            echo "Error: Unknown parameter: $1"
-            show_help
-            ;;
-    esac
+	case $1 in
+		-h|--host)
+			HOST="$2"
+			if [ -z "$HOST" ]; then
+				echo "Error: --host requires a value"
+				show_help
+			fi
+			shift 2
+			;;
+		-i|--interface)
+			INTERFACE="$2"
+			if [ -z "$INTERFACE" ]; then
+				echo "Error: --interface requires a value"
+				show_help
+			fi
+			shift 2
+			;;
+		-n|--network)
+			NETWORK_ID="$2"
+			if [ -z "$NETWORK_ID" ]; then
+				echo "Error: --network requires a value"
+				show_help
+			fi
+			shift 2
+			;;
+		--help)
+			show_help
+			;;
+		*)
+			echo "Error: Unknown parameter: $1"
+			show_help
+			;;
+	esac
 done
 
 # Validate required parameters before proceeding
@@ -267,530 +267,518 @@ trap cleanup INT TERM QUIT
 # Mark if interface is newly created
 INTERFACE_CREATED=false
 if ! ip link show "$INTERFACE" >/dev/null 2>&1; then
-    INTERFACE_CREATED=true
+	INTERFACE_CREATED=true
 fi
-    
- # Check if interface exists and is properly configured
+	
+# Check if interface exists and is properly configured
 if ! ip link show "$INTERFACE" type wireguard >/dev/null 2>&1; then
-    echo "Interface $INTERFACE does not exist or is not a WireGuard interface, creating..."
-    create_wg_interface
-    # 给接一点时间完全初始化
-    sleep 1
+	echo "Interface $INTERFACE does not exist or is not a WireGuard interface, creating..."
+	create_wg_interface
+	# Give it a moment to fully initialize
+	sleep 1
 fi
 
 # Get WireGuard information
 wg_output=$(get_wg_info)
 if [ $? -ne 0 ]; then
-    echo "Error getting WireGuard information"
-    exit 1
+	echo "Error getting WireGuard information"
+	exit 1
 fi
 
 PUBKEY=$(echo "$wg_output" | cut -d: -f1)
 LISTEN_PORT=$(echo "$wg_output" | cut -d: -f2)
 
 if [ -z "$PUBKEY" ] || [ -z "$LISTEN_PORT" ]; then
-    echo "Error: Failed to parse WireGuard information"
-    exit 1
+	echo "Error: Failed to parse WireGuard information"
+	exit 1
 fi
 
 echo "Using interface $INTERFACE:"
-echo "  Public key: $PUBKEY"
+echo "	Public key: $PUBKEY"
 echo " Listen port: $LISTEN_PORT"
 
-# 生成随机数的函数
+# generate random numbers
 random() {
-    awk -v min="$1" -v max="$2" 'BEGIN{srand(); print int(min+rand()*(max-min+1))}'
+	awk -v min="$1" -v max="$2" 'BEGIN{srand(); print int(min+rand()*(max-min+1))}'
 }
 
-# 修改退避算法函数
+# modify backoff algorithm
 do_with_retry() {
-    local attempt=0
-    local base_delay=1
-    local max_delay=120  # 最大延迟时间为 120 秒
-    local action_name="$1"
-    local action_func="$2"
-    
-    
-    
-    while true; do
-        if [ "$RUNNING" != "true" ]; then
-            return 0
-        fi
-        
-        # 直接用函数，不使用 eval
-        if ! $action_func; then
-            printf "\033[33m%s failed\033[0m\n" "$action_name"
-            
-            # 计算基础延迟时间，使用指数退避但限制最大值为 115 秒（为随机延迟预留空间）
-            local delay=$base_delay
-            i=1
-            while [ $i -lt $attempt ] && [ $delay -lt $((max_delay - 5)) ]; do
-                delay=$((delay * 2))
-                [ $delay -gt $((max_delay - 5)) ] && delay=$((max_delay - 5))  # 确保基础延迟不超过 115 秒
-                i=$((i + 1))
-            done
-            
-            # 添加 0-5 秒的随机延迟
-            local random_seconds=$(random 0 4)  # 生成 0-4 的随机数
-            delay=$((delay + random_seconds))
-            
-            # 确保总延迟不超过最大值
-            [ $delay -gt $max_delay ] && delay=$max_delay
-            
-            printf "\033[33mRetrying in %d seconds (attempt %d)...\033[0m\n" \
-                "$delay" "$attempt"
-            
-            # 等待延迟时间
-            sleep $delay
-            
-            # 如果达到最大延迟，重置退避算法
-            if [ $delay -ge $max_delay ]; then
-                printf "\033[33mReached max delay, resetting backoff...\033[0m\n"
-                attempt=0
-                base_delay=1
-                delay=$base_delay
-            fi
-            
-            attempt=$((attempt + 1))
-            base_delay=$((base_delay * 2))
-            [ $base_delay -gt $((max_delay - 5)) ] && base_delay=$((max_delay - 5))
-            
-            continue
-        fi
-        
-        # 操作成功，重置计数器
-        attempt=0
-        base_delay=1
-        return 0
-    done
+	local attempt=0
+	local base_delay=1
+	local max_delay=120  # Maximum delay time is 120 seconds
+	local action_name="$1"
+	local action_func="$2"
+	
+	while true; do
+		if [ "$RUNNING" != "true" ]; then
+			return 0
+		fi
+		
+		# Directly use the function, do not use eval
+		if ! $action_func; then
+			printf "\033[33m%s failed\033[0m\n" "$action_name"
+			
+			# Calculate base delay time, using exponential backoff but limiting maximum value to 115 seconds (reserving space for random delay)
+			local delay=$base_delay
+			i=1
+			while [ $i -lt $attempt ] && [ $delay -lt $((max_delay - 5)) ]; do
+				delay=$((delay * 2))
+				[ $delay -gt $((max_delay - 5)) ] && delay=$((max_delay - 5))  # Ensure base delay does not exceed 115 seconds
+				i=$((i + 1))
+			done
+			
+			# Add a random delay of 0-5 seconds
+			local random_seconds=$(random 0 4)  # Generate a random number between 0-4
+			delay=$((delay + random_seconds))
+			
+			# Ensure total delay does not exceed maximum value
+			[ $delay -gt $max_delay ] && delay=$max_delay
+			
+			printf "\033[33mRetrying in %d seconds (attempt %d)...\033[0m\n" \
+				"$delay" "$attempt"
+			
+			# Wait for the delay time
+			sleep $delay
+			
+			# If maximum delay is reached, reset backoff algorithm
+			if [ $delay -ge $max_delay ]; then
+				printf "\033[33mReached max delay, resetting backoff...\033[0m\n"
+				attempt=0
+				base_delay=1
+				delay=$base_delay
+			fi
+			
+			attempt=$((attempt + 1))
+			base_delay=$((base_delay * 2))
+			[ $base_delay -gt $((max_delay - 5)) ] && base_delay=$((max_delay - 5))
+			
+			continue
+		fi
+		
+		# Operation successful, reset counter
+		attempt=0
+		base_delay=1
+		return 0
+	done
 }
 
-# 添加清除会话信息的函数
+# clear session information
 clear_session() {
-    SESSION_ID=""
-    TRACKER_URL=""
-    ASSIGNED_IP=""
-    NETWORK_NAME=""
+	SESSION_ID=""
+	NEXT_URL=""
+	ASSIGNED_IP=""
+	NETWORK_NAME=""
 }
 
-# 修改认证函数
+# Modify authorization
 do_authorize() {
-    # 优先尝试IPv6连接
-    response=$(curl -6 -X POST -i -s \
-        -H 'User-Agent: sitepi' \
-        -H 'Cache-Control: no-cache' \
-        -H "PUBKEY: $PUBKEY" \
-        -H "LISTEN-PORT: $LISTEN_PORT" \
-        ${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
-        "$HOST/authorize" 2>&1)
-    status=$?
-    
-    # 如果IPv6连接失败,尝试IPv4
-    if [ $status -ne 0 ]; then
-        printf "\033[33mIPv6 connection failed, trying IPv4...\033[0m\n"
-        response=$(curl -4 -X POST -i -s \
-            -H 'User-Agent: sitepi' \
-            -H 'Cache-Control: no-cache' \
-            -H "PUBKEY: $PUBKEY" \
-            -H "LISTEN-PORT: $LISTEN_PORT" \
-            ${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
-            "$HOST/authorize" 2>&1)
-        status=$?
-    fi
-    
-    if [ $status -ne 0 ]; then
-        printf "\033[31mError: Connection failed\033[0m\n"
-        echo "Failed to connect to $HOST"
-        clear_session
-        return 1
-    fi
-    
-    # 检查响应是否为空
-    if [ -z "$response" ]; then
-        printf "\033[31mError: Empty response from server\033[0m\n"
-        clear_session
-        return 1
-    fi
-    
-    # 从响应头中提取信息
-    SESSION_ID=$(echo "$response" | grep -i '^X-SESSION-ID:' | cut -d' ' -f2 | tr -d '\r\n')
-    TRACKER_URL=$(echo "$response" | grep -i '^X-TRACKER-URL:' | cut -d' ' -f2 | tr -d '\r\n')
-    TRACKER_RESOLVE=$(echo "$response" | grep -i '^X-TRACKER-RESOLVE:' | cut -d' ' -f2 | tr -d '\r\n')
-    ASSIGNED_IP=$(echo "$response" | grep -i '^X-ASSIGNED-IP:' | cut -d' ' -f2 | tr -d '\r\n')
-    NETWORK_NAME=$(echo "$response" | grep -i '^X-NETWORK-NAME:' | cut -d' ' -f2 | tr -d '\r\n')
-    
-    if [ -z "$SESSION_ID" ] || [ -z "$TRACKER_URL" ] || [ -z "$ASSIGNED_IP" ]; then
-        printf "\033[31mError: Failed to get complete session information\033[0m\n"
-        echo "Response:"
-        echo "$response" | sed 's/^/  /'
-        clear_session
-        return 1
-    fi
-    
-    echo "  session ID: $SESSION_ID"
-    echo "    next URL: $TRACKER_URL"
-    echo "    next DNS: $TRACKER_RESOLVE"
-    echo " assigned IP: $ASSIGNED_IP"
-    echo "network name: ${NETWORK_NAME:-unknown}"
-    printf "\033[32mAuthorization successful\033[0m\n"
+	# Prefer to try IPv6 connection
+	response=$(curl -6 -X POST -i -s \
+		-H 'User-Agent: sitepi' \
+		-H 'Cache-Control: no-cache' \
+		-H "PUBKEY: $PUBKEY" \
+		-H "LISTEN-PORT: $LISTEN_PORT" \
+		${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
+		"$HOST/authorize" 2>&1)
+	status=$?
+	
+	# If IPv6 connection fails, try IPv4
+	if [ $status -ne 0 ]; then
+		printf "\033[33mIPv6 connection failed, trying IPv4...\033[0m\n"
+		response=$(curl -4 -X POST -i -s \
+			-H 'User-Agent: sitepi' \
+			-H 'Cache-Control: no-cache' \
+			-H "PUBKEY: $PUBKEY" \
+			-H "LISTEN-PORT: $LISTEN_PORT" \
+			${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
+			"$HOST/authorize" 2>&1)
+		status=$?
+	fi
+	
+	if [ $status -ne 0 ]; then
+		printf "\033[31mError: Connection failed\033[0m\n"
+		echo "Failed to connect to $HOST"
+		clear_session
+		return 1
+	fi
+	
+	# Check if the response is empty
+	if [ -z "$response" ]; then
+		printf "\033[31mError: Empty response from server\033[0m\n"
+		clear_session
+		return 1
+	fi
+	
+	# Extract information from response headers
+	SESSION_ID=$(echo "$response" | grep -i '^X-SESSION-ID:' | cut -d' ' -f2 | tr -d '\r\n')
+	NEXT_URL=$(echo "$response" | grep -i '^X-TRACKER-URL:' | cut -d' ' -f2 | tr -d '\r\n')
+	NEXT_RESOLVE=$(echo "$response" | grep -i '^X-TRACKER-RESOLVE:' | cut -d' ' -f2 | tr -d '\r\n')
+	ASSIGNED_IP=$(echo "$response" | grep -i '^X-ASSIGNED-IP:' | cut -d' ' -f2 | tr -d '\r\n')
+	NETWORK_NAME=$(echo "$response" | grep -i '^X-NETWORK-NAME:' | cut -d' ' -f2 | tr -d '\r\n')
+	
+	if [ -z "$SESSION_ID" ] || [ -z "$NEXT_URL" ] || [ -z "$ASSIGNED_IP" ]; then
+		printf "\033[31mError: Failed to get complete session information\033[0m\n"
+		echo "Response:"
+		echo "$response" | sed 's/^/  /'
+		clear_session
+		return 1
+	fi
+	
+	echo "	session ID: $SESSION_ID"
+	echo "	  next URL: $NEXT_URL"
+	echo "	  next DNS: $NEXT_RESOLVE"
+	echo "	 assigned IP: $ASSIGNED_IP"
+	echo "network name: ${NETWORK_NAME:-unknown}"
+	printf "\033[32mAuthorization successful\033[0m\n"
 
-    # 配置接口 IP 地址
-    if ! ip addr show dev "$INTERFACE" | grep -q "$ASSIGNED_IP"; then
-        # 删除旧的 IP 地址
-        ip addr flush dev "$INTERFACE" 2>/dev/null
-        
-        # 添加新的 IP 地址
-        if ip addr add "$ASSIGNED_IP/24" dev "$INTERFACE" 2>/dev/null; then
-            echo '' # "Configured interface IP: $ASSIGNED_IP"
-        else
-            printf "\033[31mError: Failed to configure interface IP\033[0m\n"
-            return 1
-        fi
-    else
-        echo "" # "Interface already has IP: $ASSIGNED_IP"
-    fi
+	# Configure interface IP address
+	if ! ip addr show dev "$INTERFACE" | grep -q "$ASSIGNED_IP"; then
+		# Delete old IP address
+		ip addr flush dev "$INTERFACE" 2>/dev/null
+		
+		# Add new IP address
+		if ip addr add "$ASSIGNED_IP/24" dev "$INTERFACE" 2>/dev/null; then
+			echo '' # "Configured interface IP: $ASSIGNED_IP"
+		else
+			printf "\033[31mError: Failed to configure interface IP\033[0m\n"
+			return 1
+		fi
+	else
+		echo "" # "Interface already has IP: $ASSIGNED_IP"
+	fi
 
-    return 0
+	return 0
 }
 
-# 修改 SSE 连接函数
+# Modify SSE connection
 do_sse_connect() {
-    # 检查会话信息是否有效
-    if [ -z "$SESSION_ID" ] || [ -z "$TRACKER_URL" ]; then
-        printf "\033[33mMissing session information, need to re-authorize\033[0m\n"
-        clear_session
-        return 1
-    fi
-    
-    echo "Connecting to $TRACKER_URL"
-    
-    # 使用临时文件存储退出状态
-    local tmpfile=$(mktemp)
-    echo "56" > "$tmpfile"
-    
-    # curl 参数说明:
-    # --no-buffer: 禁用输出缓冲
-    # --connect-timeout 5: 连接超时时间
-    # --max-time 0: 无限等待
-    # --keepalive-time 25: 保持连接活跃
-    # --tcp-nodelay: 禁用 Nagle 算法
-    # --retry 0: 禁用自动重试
-    # --http2: 使用 HTTP/2
-    (curl --no-buffer \
-        --connect-timeout 5 \
-        --max-time 0 \
-        --keepalive-time 25 \
-        --tcp-nodelay \
-        --retry 0 \
-        --http2 \
-        -H 'User-Agent: sitepi' \
-        -H "X-SESSION-ID: $SESSION_ID" \
-        ${TRACKER_RESOLVE:+--resolve $TRACKER_RESOLVE} \
-        -N "$TRACKER_URL" 2>/dev/null || echo $? > "$tmpfile") | while read -r line; do
-        if ! $RUNNING; then
-            break
-        fi
-        process_sse_message "$line"
-    done
-    
-    # 读取 curl 的退出状态
-    local pipe_status=$(cat "$tmpfile")
-    rm -f "$tmpfile"
-    
-    # 检查是否是因为信号退出
-    if ! $RUNNING; then
-        return 0
-    fi
-    
-    # 处理连接状态
-    case $pipe_status in
-        0)  # 正常关闭（包括服务器断开）
-            printf "\033[33mConnection closed\033[0m\n"
-            clear_session
-            return 1
-            ;;
-        28) # 操作超时
-            printf "\033[31mConnection timeout\033[0m\n"
-            clear_session
-            return 1
-            ;;
-        52) # 服务器空响应
-            printf "\033[31mEmpty reply from server\033[0m\n"
-            clear_session
-            return 1
-            ;;
-        56) # 连接重置
-            printf "\033[31mConnection reset by peer\033[0m\n"
-            clear_session
-            return 1
-            ;;
-        *)  # 其他错误
-            printf "\033[31mConnection failed with error code %d\033[0m\n" "$pipe_status"
-            clear_session
-            return 1
-            ;;
-    esac
+	# Check if session information is valid
+	if [ -z "$SESSION_ID" ] || [ -z "$NEXT_URL" ]; then
+		printf "\033[33mMissing session information, need to re-authorize\033[0m\n"
+		clear_session
+		return 1
+	fi
+	
+	echo "Connecting to $NEXT_URL"
+	
+	# Use a temporary file to store exit status
+	local tmpfile=$(mktemp)
+	echo "56" > "$tmpfile"
+	
+	# curl parameters explanation:
+	# --no-buffer: Disable output buffering
+	# --connect-timeout 5: Connection timeout
+	# --max-time 0: Wait indefinitely
+	# --keepalive-time 25: Keep connection alive
+	# --tcp-nodelay: Disable Nagle's algorithm
+	# --retry 0: Disable automatic retries
+	# --http2: Use HTTP/2
+	(curl --no-buffer \
+		--connect-timeout 5 \
+		--max-time 0 \
+		--keepalive-time 25 \
+		--tcp-nodelay \
+		--retry 0 \
+		--http2 \
+		-H 'User-Agent: sitepi' \
+		-H "X-SESSION-ID: $SESSION_ID" \
+		${NEXT_RESOLVE:+--resolve $NEXT_RESOLVE} \
+		-N "$NEXT_URL" 2>/dev/null || echo $? > "$tmpfile") | while read -r line; do
+		if ! $RUNNING; then
+			break
+		fi
+		process_sse_message "$line"
+	done
+	
+	# Read curl's exit status
+	local pipe_status=$(cat "$tmpfile")
+	rm -f "$tmpfile"
+	
+	# Check if it exited due to a signal
+	if ! $RUNNING; then
+		return 0
+	fi
+	
+	# Handle connection status
+	case $pipe_status in
+		0)  # Normal closure (including server disconnection)
+			printf "\033[33mConnection closed\033[0m\n"
+			clear_session
+			return 1
+			;;
+		28) # Operation timeout
+			printf "\033[31mConnection timeout\033[0m\n"
+			clear_session
+			return 1
+			;;
+		52) # Server empty response
+			printf "\033[31mEmpty reply from server\033[0m\n"
+			clear_session
+			return 1
+			;;
+		56) # Connection reset
+			printf "\033[31mConnection reset by peer\033[0m\n"
+			clear_session
+			return 1
+			;;
+		*)  # Other errors
+			printf "\033[31mConnection failed with error code %d\033[0m\n" "$pipe_status"
+			clear_session
+			return 1
+			;;
+	esac
 }
 
-# 修改 process_sse_message 函数中的 keepalive 处理部分
+# Modify the keepalive handling part in the process_sse_message function
 process_sse_message() {
-    local line="$1"
-    
-    # 处理空行
-    if [ -z "$line" ]; then
-        return 0
-    fi
-    
-    # 使用 IFS 分割字段
-    OLDIFS="$IFS"
-    IFS=' '
-    set -- $line
-    IFS="$OLDIFS"
-    
-    # 解析字段
-    local action="$1"
-    local peer_pubkey="$2"
-    local preshared_key="$3"
-    local endpoint="$4"
-    local allowed_ips="$5"
-    local keepalive="$6"
-    
-    case "$action" in
-        wg)
-            # 验证字段
-            if [ -n "$peer_pubkey" ] && [ -n "$keepalive" ]; then
-                # 检查是否是自己的公钥
-                if [ "$peer_pubkey" = "$PUBKEY" ]; then
-                    echo "Skipping self as peer"
-                    return 0
-                fi
+	local line="$1"
+	
+	# Handle empty lines
+	if [ -z "$line" ]; then
+		return 0
+	fi
+	
+	# Use IFS to split fields
+	OLDIFS="$IFS"
+	IFS=' '
+	set -- $line
+	IFS="$OLDIFS"
+	
+	# Parse fields
+	local action="$1"
+	local peer_pubkey="$2"
+	local preshared_key="$3"
+	local endpoint="$4"
+	local allowed_ips="$5"
+	local keepalive="$6"
+	
+	case "$action" in
+		wg)
+			# Validate fields
+			if [ -n "$peer_pubkey" ] && [ -n "$keepalive" ]; then
+				# Check if it is self-public key
+				if [ "$peer_pubkey" = "$PUBKEY" ]; then
+					echo "Skipping self as peer"
+					return 0
+				fi
 
-                # 处理 endpoint
-                if [ "$endpoint" != "x" ]; then
-                    # 处理 IPv4-mapped IPv6 地址
-                    if echo "$endpoint" | grep -q "^\[::ffff:"; then
-                        # 提取 IPv4 部分和端口
-                        local ipv4_part=$(echo "$endpoint" | sed 's/\[::ffff:\([0-9.]*\)\]:\([0-9]*\)/\1/')
-                        local port_part=$(echo "$endpoint" | sed 's/\[::ffff:\([0-9.]*\)\]:\([0-9]*\)/\2/')
-                        endpoint="$ipv4_part:$port_part"
-                        echo "Converted IPv6 endpoint to IPv4: $endpoint"
-                    fi
-                fi
+				# Handle endpoint
+				if [ "$endpoint" != "x" ]; then
+					# Handle IPv4-mapped IPv6 address
+					if echo "$endpoint" | grep -q "^\[::ffff:"; then
+						# Extract IPv4 part and port
+						local ipv4_part=$(echo "$endpoint" | sed 's/\[::ffff:\([0-9.]*\)\]:\([0-9]*\)/\1/')
+						local port_part=$(echo "$endpoint" | sed 's/\[::ffff:\([0-9.]*\)\]:\([0-9]*\)/\2/')
+						endpoint="$ipv4_part:$port_part"
+						echo "Converted IPv6 endpoint to IPv4: $endpoint"
+					fi
+				fi
 
-                echo " peer update: $peer_pubkey $preshared_key $endpoint $allowed_ips $keepalive"
+				echo " peer update: $peer_pubkey $preshared_key $endpoint $allowed_ips $keepalive"
 
-                # 配置 WireGuard peer
-                if ! wg show "$INTERFACE" peers | grep -q "$peer_pubkey"; then
-                    if [ "$endpoint" = "x" ]; then
-                        # When endpoint is x, don't configure endpoint
-                        if [ "$preshared_key" = "x" ]; then
-                            # No preshared key
-                            if [ "$allowed_ips" = "x" ]; then
-                                # No allowed IPs
-                                wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    persistent-keepalive "$keepalive"
-                            else
-                                # With allowed IPs
-                                wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    allowed-ips "$allowed_ips" \
-                                    persistent-keepalive "$keepalive"
-                            fi
-                        else
-                            # With preshared key
-                            if [ "$allowed_ips" = "x" ]; then
-                                # No allowed IPs
-                                printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    preshared-key /dev/stdin \
-                                    persistent-keepalive "$keepalive"
-                            else
-                                # With allowed IPs
-                                printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    preshared-key /dev/stdin \
-                                    allowed-ips "$allowed_ips" \
-                                    persistent-keepalive "$keepalive"
-                            fi
-                        fi
-                    else
-                        # Normal configuration with endpoint
-                        if [ "$preshared_key" = "x" ]; then
-                            # No preshared key
-                            if [ "$allowed_ips" = "x" ]; then
-                                # No allowed IPs
-                                wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    endpoint "$endpoint" \
-                                    persistent-keepalive "$keepalive"
-                            else
-                                # With allowed IPs
-                                wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    endpoint "$endpoint" \
-                                    allowed-ips "$allowed_ips" \
-                                    persistent-keepalive "$keepalive"
-                            fi
-                        else
-                            # With preshared key
-                            if [ "$allowed_ips" = "x" ]; then
-                                # No allowed IPs
-                                printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    preshared-key /dev/stdin \
-                                    endpoint "$endpoint" \
-                                    persistent-keepalive "$keepalive"
-                            else
-                                # With allowed IPs
-                                printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    preshared-key /dev/stdin \
-                                    endpoint "$endpoint" \
-                                    allowed-ips "$allowed_ips" \
-                                    persistent-keepalive "$keepalive"
-                            fi
-                        fi
-                    fi
-                    echo "Added new peer: $peer_pubkey"
-                else
-                    # Update existing peer
-                    if [ "$endpoint" = "x" ]; then
-                        # When endpoint is x, only update other parameters
-                        if [ "$preshared_key" = "x" ]; then
-                            if [ "$allowed_ips" = "x" ]; then
-                                # Skip updating allowed IPs
-                                :
-                            else
-                                wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    allowed-ips "$allowed_ips"
-                            fi
-                        else
-                            if [ "$allowed_ips" = "x" ]; then
-                                printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    preshared-key /dev/stdin
-                            else
-                                printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    preshared-key /dev/stdin \
-                                    allowed-ips "$allowed_ips"
-                            fi
-                        fi
-                    else
-                        # Normal update with endpoint
-                        if [ "$preshared_key" = "x" ]; then
-                            if [ "$allowed_ips" = "x" ]; then
-                                wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    endpoint "$endpoint"
-                            else
-                                wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    endpoint "$endpoint" \
-                                    allowed-ips "$allowed_ips"
-                            fi
-                        else
-                            if [ "$allowed_ips" = "x" ]; then
-                                printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    preshared-key /dev/stdin \
-                                    endpoint "$endpoint" \
-                                    persistent-keepalive "$keepalive"
-                            else
-                                printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-                                    preshared-key /dev/stdin \
-                                    endpoint "$endpoint" \
-                                    allowed-ips "$allowed_ips" \
-                                    persistent-keepalive "$keepalive"
-                            fi
-                        fi
-                    fi
-                    echo "Updated peer: $peer_pubkey"
-                fi
+				# Configure WireGuard peer
+				if ! wg show "$INTERFACE" peers | grep -q "$peer_pubkey"; then
+					if [ "$endpoint" = "x" ]; then
+						# When endpoint is x, don't configure endpoint
+						if [ "$preshared_key" = "x" ]; then
+							# No preshared key
+							if [ "$allowed_ips" = "x" ]; then
+								# No allowed IPs
+								wg set "$INTERFACE" peer "$peer_pubkey" \
+									persistent-keepalive "$keepalive"
+							else
+								# With allowed IPs
+								wg set "$INTERFACE" peer "$peer_pubkey" \
+									allowed-ips "$allowed_ips" \
+									persistent-keepalive "$keepalive"
+							fi
+						else
+							# With preshared key
+							if [ "$allowed_ips" = "x" ]; then
+								# No allowed IPs
+								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
+									preshared-key /dev/stdin \
+									persistent-keepalive "$keepalive"
+							else
+								# With allowed IPs
+								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
+									preshared-key /dev/stdin \
+									allowed-ips "$allowed_ips" \
+									persistent-keepalive "$keepalive"
+							fi
+						fi
+					else
+						# Normal configuration with endpoint
+						if [ "$preshared_key" = "x" ]; then
+							# No preshared key
+							if [ "$allowed_ips" = "x" ]; then
+								# No allowed IPs
+								wg set "$INTERFACE" peer "$peer_pubkey" \
+									endpoint "$endpoint" \
+									persistent-keepalive "$keepalive"
+							else
+								# With allowed IPs
+								wg set "$INTERFACE" peer "$peer_pubkey" \
+									endpoint "$endpoint" \
+									allowed-ips "$allowed_ips" \
+									persistent-keepalive "$keepalive"
+							fi
+						else
+							# With preshared key
+							if [ "$allowed_ips" = "x" ]; then
+								# No allowed IPs
+								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
+									preshared-key /dev/stdin \
+									endpoint "$endpoint" \
+									persistent-keepalive "$keepalive"
+							else
+								# With allowed IPs
+								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
+									preshared-key /dev/stdin \
+									endpoint "$endpoint" \
+									allowed-ips "$allowed_ips" \
+									persistent-keepalive "$keepalive"
+							fi
+						fi
+					fi
+					echo "Added new peer: $peer_pubkey"
+				else
+					# Update existing peer
+					if [ "$endpoint" = "x" ]; then
+						# When endpoint is x, only update other parameters
+						if [ "$preshared_key" = "x" ]; then
+							if [ "$allowed_ips" = "x" ]; then
+								# Skip updating allowed IPs
+								:
+							else
+								wg set "$INTERFACE" peer "$peer_pubkey" \
+									allowed-ips "$allowed_ips"
+							fi
+						else
+							if [ "$allowed_ips" = "x" ]; then
+								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
+									preshared-key /dev/stdin
+							else
+								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
+									preshared-key /dev/stdin \
+									allowed-ips "$allowed_ips"
+							fi
+						fi
+					else
+						# Normal update with endpoint
+						if [ "$preshared_key" = "x" ]; then
+							if [ "$allowed_ips" = "x" ]; then
+								wg set "$INTERFACE" peer "$peer_pubkey" \
+									endpoint "$endpoint"
+							else
+								wg set "$INTERFACE" peer "$peer_pubkey" \
+									endpoint "$endpoint" \
+									allowed-ips "$allowed_ips"
+							fi
+						else
+							if [ "$allowed_ips" = "x" ]; then
+								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
+									preshared-key /dev/stdin \
+									endpoint "$endpoint" \
+									persistent-keepalive "$keepalive"
+							else
+								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
+									preshared-key /dev/stdin \
+									endpoint "$endpoint" \
+									allowed-ips "$allowed_ips" \
+									persistent-keepalive "$keepalive"
+							fi
+						fi
+					fi
+					echo "Updated peer: $peer_pubkey"
+				fi
 
-                # Configure routes only if allowed_ips is not "x" or "0.0.0.0/0"
-                if [ "$allowed_ips" != "x" ] && [ "$allowed_ips" != "0.0.0.0/0" ]; then
-                    # 保存旧的 IFS
-                    OLDIFS="$IFS"
-                    # 设置 IFS 为逗号
-                    IFS=','
-                    
-                    # 遍历所有 IP
-                    for ip in $allowed_ips; do
-                        # 去除首尾空格
-                        ip=$(echo "$ip" | sed 's/^ *//;s/ *$//')
-                        
-                        # 跳过 0.0.0.0/0 或包含 0.0.0.0 的路由
-                        if echo "$ip" | grep -q "^0\.0\.0\.0"; then
-                            echo "Skipping route: $ip (zero route not allowed)"
-                            continue
-                        fi
-                        
-                        # 删除旧路由
-                        ip route del "$ip" dev "$INTERFACE" 2>/dev/null
-                        
-                        # 添加新路由
-                        if ! ip route add "$ip" dev "$INTERFACE"; then
-                            printf "\033[31mError: Failed to add route for %s\033[0m\n" "$ip"
-                        else
-                            echo "Added route: $ip"
-                        fi
-                    done
-                    
-                    # 恢复原来的 IFS
-                    IFS="$OLDIFS"
-                fi
-            fi
-            ;;
-        *)
-            if [ -n "$line" ]; then
-                echo "Unknown message: $line"
-            fi
-            ;;
-    esac
-    return 0
+				# Configure routes only if allowed_ips is not "x" or "0.0.0.0/0"
+				if [ "$allowed_ips" != "x" ] && [ "$allowed_ips" != "0.0.0.0/0" ]; then
+					# Save old IFS
+					OLDIFS="$IFS"
+					# Set IFS to comma
+					IFS=','
+					
+					# Iterate over all IPs
+					for ip in $allowed_ips; do
+						# Trim leading and trailing spaces
+						ip=$(echo "$ip" | sed 's/^ *//;s/ *$//')
+						
+						# Skip 0.0.0.0/0 or routes containing 0.0.0.0
+						if echo "$ip" | grep -q "^0\.0\.0\.0"; then
+							echo "Skipping route: $ip (zero route not allowed)"
+							continue
+						fi
+						
+						# Delete old route
+						ip route del "$ip" dev "$INTERFACE" 2>/dev/null
+						
+						# Add new route
+						if ! ip route add "$ip" dev "$INTERFACE"; then
+							printf "\033[31mError: Failed to add route for %s\033[0m\n" "$ip"
+						else
+							echo "Added route: $ip"
+						fi
+					done
+					
+					# Restore original IFS
+					IFS="$OLDIFS"
+				fi
+			fi
+			;;
+		*)
+			if [ -n "$line" ]; then
+				echo "Unknown message: $line"
+			fi
+			;;
+	esac
+	return 0
 }
 
-# 修改主循环
-main() {
-    # 初始化变量
-    RUNNING=true
-    
-    # 设置信号处理
-    trap 'RUNNING=false; cleanup' INT TERM QUIT
-    
-    # 主循环
-    while true
-    do
-        # 检查是否需要退出
-        if [ "$RUNNING" != "true" ]
-        then
-            cleanup
-            exit 0
-        fi
+# Initialize variables
+RUNNING=true
 
-        # 清除上一次会话信息
-        clear_session
-        
-        # 检查会话状态并进行认证
-        if [ -z "$SESSION_ID" ] || [ -z "$TRACKER_URL" ]
-        then
-            printf "\033[33mAuthorizing...\033[0m\n"
-            if ! do_with_retry "Authorization" do_authorize
-            then
-                printf "\033[31mFailed to authorize after multiple attempts\033[0m\n"
-                cleanup
-                exit 1
-            fi
-        fi
-        
-        # 尝试建立 SSE 连接
-        if ! do_sse_connect
-        then
-            if [ "$RUNNING" != "true" ]
-            then
-                cleanup
-                exit 0
-            fi
-            printf "\033[33mWill re-authorize...\033[0m\n"
-            SESSION_ID=""
-            TRACKER_URL=""
-            continue
-        fi
-        
-        # 如果 SSE 连接成功，等待一会再重试
-        # 首次连接随机等待 6-60 秒
-        sleep $(random 6 60)
-    done
-}
+# Set signal handling
+trap 'RUNNING=false; cleanup' INT TERM QUIT
 
-# 启动主循环
-main
+# Main loop
+while true
+do
+	# Check if need to exit
+	if [ "$RUNNING" != "true" ]; then
+			cleanup
+		exit 0
+	fi
+
+	# Clear previous session information
+	clear_session
+		
+	# Check session status and authorize
+	if [ -z "$SESSION_ID" ] || [ -z "$NEXT_URL" ]; then
+		printf "\033[33mAuthorizing...\033[0m\n"
+		if ! do_with_retry "Authorization" do_authorize
+		then
+			printf "\033[31mFailed to authorize after multiple attempts\033[0m\n"
+			cleanup
+			exit 1
+		fi
+	fi
+		
+	# Try to establish SSE connection
+	if ! do_sse_connect; then
+		if [ "$RUNNING" != "true" ]; then
+			cleanup
+			exit 0
+		fi
+		printf "\033[33mWill re-authorize...\033[0m\n"
+		SESSION_ID=""
+		NEXT_URL=""
+		continue
+	fi
+		
+	# If SSE connection is successful, wait a while before retrying
+	# First connection waits randomly between 6-120 seconds
+	sleep $(random 6 120)
+done
