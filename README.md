@@ -1,19 +1,19 @@
 # SitePi SDWAN Client
 
-[中文说明](README.zh-CN.md)
+[中文版](README.zh-CN.md)
 
 A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client implementation.
 
 ## Get Network ID
-Visit https://sitepi.net/ to register an account, create a network, and bind your site(public key) to the network
+Visit https://sitepi.net/ to register an account, create a network, and input your site(public key) to bind to the network
 
-## provisioning code
+## Provisioning Code
 Also, you can input the provisioning code of the network when installing the site program, and the site will be automatically bound to the network
 
 ## Requirements
 
 - Linux/OpenWrt
-- Network interface with root/admin privileges
+- Network interface with root/admin privileges  
 
 ### Ubuntu
 ```bash

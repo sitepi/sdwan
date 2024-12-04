@@ -3,7 +3,7 @@
 一个轻量级且高效的软件定义广域网 (SD-WAN) 客户端实现。
 
 ## 管理
-访问 [https://sitepi.cn](https://sitepi.cn) 并注册账号，创建网络, 把站点(public key)绑定到网络
+访问 [https://sitepi.cn](https://sitepi.cn) 并注册账号，创建网络, 输入站点的 public key 即可绑定到网络
 
 ## 网络配置代码
 也可以在安装站点程序时, 输入网络的 配置代码, 站点会自动绑定到网络
