@@ -2,8 +2,11 @@
 
 一个轻量级且高效的软件定义广域网 (SD-WAN) 客户端实现。
 
-## 获取networkid
-访问 [https://sitepi.net](https://sitepi.net) 并注册账号，创建网络, 获取networkid
+## 管理
+访问 [https://sitepi.cn](https://sitepi.cn) 并注册账号，创建网络, 把站点(public key)绑定到网络
+
+## 网络配置代码
+也可以在安装站点程序时, 输入网络的 配置代码, 站点会自动绑定到网络
 
 ## 系统要求
 
@@ -23,7 +26,7 @@ sudo systemctl enable sitepi.service
 
 #### 配置
 ```bash
-sudo vim /etc/sitepi/config.json # edit configuration, binding your network ID
+sudo vim /etc/sitepi/config.json # optional edit configuration, binding provisioning code
 
 sudo service sitepi {status|start|stop|restart}
 ```
@@ -42,24 +45,14 @@ opkg install luci-app-sitepi_0.0.2_all.ipk
 - 安装文件架构是平台无关的。所有路由器使用相同的ipk。
 
 #### 配置
-   1. Go to LuCI web interface
-   2. Navigate to Services -> Sitepi SDWAN
-   3. Configure:
-      - Enable the service
-      - Set WireGuard interface name
-      - Optionally set server address
-      - Optionally set network ID      # binding your network ID
-   4. Save & Apply
-
-## 功能
-
-- WireGuard-based
-- Intelligent traffic routing
-- QoS (Quality of Service) management
-- Real-time network monitoring
-- Automatic failover
-- Multi-link support
-- Zero-touch provisioning
+   1. 访问 LuCI 网页界面
+   2. 导航到 服务 -> Sitepi SDWAN
+   3. 配置：
+      - 启用服务
+      - 设置 WireGuard 接口名称
+      - 可选设置服务器地址
+      - 可选设置配置代码      # 绑定配置代码
+   4. 保存并应用
 
 ## License
 

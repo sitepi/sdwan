@@ -5,7 +5,10 @@
 A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client implementation.
 
 ## Get Network ID
-Visit https://sitepi.net/ to register an account, create a network, and obtain your network ID
+Visit https://sitepi.net/ to register an account, create a network, and bind your site(public key) to the network
+
+## provisioning code
+Also, you can input the provisioning code of the network when installing the site program, and the site will be automatically bound to the network
 
 ## Requirements
 
@@ -25,7 +28,7 @@ sudo systemctl enable sitepi.service
 
 #### Configuration
 ```bash
-sudo vim /etc/sitepi/config.json # edit configuration, binding your network ID
+sudo vim /etc/sitepi/config.json # optional edit configuration, binding provisioning code
 
 sudo service sitepi {status|start|stop|restart}
 ```
@@ -50,7 +53,7 @@ opkg install luci-app-sitepi_0.0.2_all.ipk
       - Enable the service
       - Set WireGuard interface name
       - Optionally set server address
-      - Optionally set network ID      # binding your network ID
+      - Optionally set provisioning code      # binding provisioning code
    4. Save & Apply
 
 ## Features
