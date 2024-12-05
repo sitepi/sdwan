@@ -612,26 +612,36 @@ process_message() {
 					OLDIFS="$IFS"
 					# Set IFS to comma
 					IFS=','
-					
+
+					local peer_ip=""
 					# Iterate over all IPs
 					for ip in $allowed_ips; do
-						# Trim leading and trailing spaces
-						ip=$(echo "$ip" | sed 's/^ *//;s/ *$//')
-						
+						# Trim leading and trailing spaces (keep /32, /24, /16, /8)
+						ip=$(echo "$ip" | xargs)  # Use xargs to remove leading and trailing spaces
+
 						# Skip 0.0.0.0/0 or routes containing 0.0.0.0
 						if echo "$ip" | grep -q "^0\.0\.0\.0"; then
 							echo "Skipping route: $ip (zero route not allowed)"
 							continue
 						fi
+
+						if [ -z "$peer_ip" ]; then
+							peer_ip="$ip"
+							# Configure the route for the peer's interface IP separately
+							ip route del "$peer_ip" dev "$INTERFACE" 2>/dev/null
+							ip route add "$peer_ip" dev "$INTERFACE"
+							echo "Added route: $peer_ip"
+							continue
+						fi
 						
 						# Delete old route
-						ip route del "$ip" dev "$INTERFACE" 2>/dev/null
+						ip route del "$ip" 2>/dev/null
 						
 						# Add new route
-						if ! ip route add "$ip" dev "$INTERFACE"; then
+						if ! ip route add "$ip" via "$peer_ip"; then
 							printf "\033[31mError: Failed to add route for %s\033[0m\n" "$ip"
 						else
-							echo "Added route: $ip"
+							echo "Added route: $ip via $peer_ip"
 						fi
 					done
 					
