@@ -467,17 +467,15 @@ do_sse_connect() {
 	# curl parameters explanation:
 	# --no-buffer: Disable output buffering
 	# --connect-timeout 5: Connection timeout
-	# --max-time 0: Wait indefinitely
-	# --keepalive-time 25: Keep connection alive
-	# --tcp-nodelay: Disable Nagle's algorithm
-	# --retry 0: Disable automatic retries
+	# --max-time 864000: Wait (10 days)
+	# --keepalive-time 24: Keep connection alive
+	# --retry 5: automatic retries 5 times
 	# --http2: Use HTTP/2
 	(curl --no-buffer \
 		--connect-timeout 5 \
-		--max-time 0 \
-		--keepalive-time 25 \
-		--tcp-nodelay \
-		--retry 0 \
+		--max-time 864000 \
+		--keepalive-time 24 \
+		--retry 3 \
 		--http2 \
 		-H 'User-agent: sitepi' \
 		-H "X-SESSION: $SESSION_ID" \
@@ -486,7 +484,7 @@ do_sse_connect() {
 		if ! $RUNNING; then
 			break
 		fi
-		process_sse_message "$line"
+		process_message "$line"
 	done
 	
 	# Read curl's exit status
@@ -528,8 +526,8 @@ do_sse_connect() {
 	esac
 }
 
-# Modify the keepalive handling part in the process_sse_message function
-process_sse_message() {
+# Modify the keepalive handling part in the process_message function
+process_message() {
 	local line="$1"
 	
 	# Handle empty lines
@@ -557,7 +555,21 @@ process_sse_message() {
 			if [ -n "$peer_pubkey" ] && [ -n "$keepalive" ]; then
 				# Check if it's our own public key
 				if [ "$peer_pubkey" = "$PUBKEY" ]; then
-					echo "Skipping self as peer"
+					# Get the current IP address of the interface
+					local current_ip=$(ip addr show dev "$INTERFACE" | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+					
+					# Check if allowed_ips is not empty and contains a different IP
+					if [ -n "$allowed_ips" ] && [[ "$allowed_ips" != *"$current_ip"* ]]; then
+						# Validate allowed_ips format
+						if ! echo "$allowed_ips" | grep -qE '^(0\.0\.0\.0|[1-9][0-9]?\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|[1-9][0-9]?:[0-9a-fA-F]{0,4}(:[0-9a-fA-F]{0,4}){0,7})$'; then
+							echo "Skipping invalid allowed IPs: $allowed_ips"
+							return 0
+						fi
+						# Update the new ipaddress to the interface
+						echo "Updating interface IP: $current_ip"
+						ip addr del "$current_ip" dev "$INTERFACE"  # Delete old IP address
+						ip addr add "$allowed_ips" dev "$INTERFACE"  # Add the new IP to the interface
+					fi
 					return 0
 				fi
 
@@ -573,123 +585,25 @@ process_sse_message() {
 					fi
 				fi
 
-				echo " peer update: $peer_pubkey $preshared_key $endpoint $allowed_ips $keepalive"
+				echo " peer: $peer_pubkey $preshared_key $endpoint $allowed_ips $keepalive"
+
+				# Remove the corresponding pubkey before configuration
+				wg set "$INTERFACE" peer "$peer_pubkey" remove
 
 				# Configure WireGuard peer
-				if ! wg show "$INTERFACE" peers | grep -q "$peer_pubkey"; then
-					if [ "$endpoint" = "x" ]; then
-						# When endpoint is x, don't configure endpoint
-						if [ "$preshared_key" = "x" ]; then
-							# No preshared key
-							if [ "$allowed_ips" = "x" ]; then
-								# No allowed IPs
-								wg set "$INTERFACE" peer "$peer_pubkey" \
-									persistent-keepalive "$keepalive"
-							else
-								# With allowed IPs
-								wg set "$INTERFACE" peer "$peer_pubkey" \
-									allowed-ips "$allowed_ips" \
-									persistent-keepalive "$keepalive"
-							fi
-						else
-							# With preshared key
-							if [ "$allowed_ips" = "x" ]; then
-								# No allowed IPs
-								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-									preshared-key /dev/stdin \
-									persistent-keepalive "$keepalive"
-							else
-								# With allowed IPs
-								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-									preshared-key /dev/stdin \
-									allowed-ips "$allowed_ips" \
-									persistent-keepalive "$keepalive"
-							fi
-						fi
-					else
-						# Normal configuration with endpoint
-						if [ "$preshared_key" = "x" ]; then
-							# No preshared key
-							if [ "$allowed_ips" = "x" ]; then
-								# No allowed IPs
-								wg set "$INTERFACE" peer "$peer_pubkey" \
-									endpoint "$endpoint" \
-									persistent-keepalive "$keepalive"
-							else
-								# With allowed IPs
-								wg set "$INTERFACE" peer "$peer_pubkey" \
-									endpoint "$endpoint" \
-									allowed-ips "$allowed_ips" \
-									persistent-keepalive "$keepalive"
-							fi
-						else
-							# With preshared key
-							if [ "$allowed_ips" = "x" ]; then
-								# No allowed IPs
-								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-									preshared-key /dev/stdin \
-									endpoint "$endpoint" \
-									persistent-keepalive "$keepalive"
-							else
-								# With allowed IPs
-								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-									preshared-key /dev/stdin \
-									endpoint "$endpoint" \
-									allowed-ips "$allowed_ips" \
-									persistent-keepalive "$keepalive"
-							fi
-						fi
-					fi
-					echo "Added new peer: $peer_pubkey"
-				else
-					# Update existing peer
-					if [ "$endpoint" = "x" ]; then
-						# When endpoint is x, only update other parameters
-						if [ "$preshared_key" = "x" ]; then
-							if [ "$allowed_ips" = "x" ]; then
-								# Skip updating allowed IPs
-								:
-							else
-								wg set "$INTERFACE" peer "$peer_pubkey" \
-									allowed-ips "$allowed_ips"
-							fi
-						else
-							if [ "$allowed_ips" = "x" ]; then
-								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-									preshared-key /dev/stdin
-							else
-								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-									preshared-key /dev/stdin \
-									allowed-ips "$allowed_ips"
-							fi
-						fi
-					else
-						# Normal update with endpoint
-						if [ "$preshared_key" = "x" ]; then
-							if [ "$allowed_ips" = "x" ]; then
-								wg set "$INTERFACE" peer "$peer_pubkey" \
-									endpoint "$endpoint"
-							else
-								wg set "$INTERFACE" peer "$peer_pubkey" \
-									endpoint "$endpoint" \
-									allowed-ips "$allowed_ips"
-							fi
-						else
-							if [ "$allowed_ips" = "x" ]; then
-								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-									preshared-key /dev/stdin \
-									endpoint "$endpoint" \
-									persistent-keepalive "$keepalive"
-							else
-								printf '%s' "$preshared_key" | wg set "$INTERFACE" peer "$peer_pubkey" \
-									preshared-key /dev/stdin \
-									endpoint "$endpoint" \
-									allowed-ips "$allowed_ips" \
-									persistent-keepalive "$keepalive"
-							fi
-						fi
-					fi
+				# Prepare common parameters
+				local params=""
+				if [ "$preshared_key" != "x" ]; then params="$params preshared-key $preshared_key"; fi
+				if [ "$allowed_ips" != "x" ]; then params="$params allowed-ips $allowed_ips"; fi
+				if [ "$endpoint" != "x" ]; then params="$params endpoint $endpoint"; fi
+				if [ "$keepalive" != "x" ]; then params="$params persistent-keepalive $keepalive"; fi
+
+				# Set the peer with the prepared parameters
+				if [ -n "$params" ]; then
+					wg set $INTERFACE peer $peer_pubkey $params
 					echo "Updated peer: $peer_pubkey"
+				else
+					echo "Removed peer: $peer_pubkey"
 				fi
 
 				# Configure routes only if allowed_ips is not "x" or "0.0.0.0/0"
