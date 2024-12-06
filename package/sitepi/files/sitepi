@@ -565,10 +565,15 @@ process_message() {
 							echo "Skipping invalid allowed IPs: $allowed_ips"
 							return 0
 						fi
+
+						# Clear all routes with next hop as current_ip
+						ip route flush table main via "$current_ip" 2>/dev/null
+						ip route del via "$current_ip" dev "$INTERFACE" 2>/dev/null
+
 						# Update the new ipaddress to the interface
 						echo "Updating interface IP: $current_ip"
-						ip addr del "$current_ip" dev "$INTERFACE"  # Delete old IP address
-						ip addr add "$allowed_ips" dev "$INTERFACE"  # Add the new IP to the interface
+						ip addr del "$current_ip" dev "$INTERFACE" 2>/dev/null # Delete old IP address
+						ip addr add "$allowed_ips" dev "$INTERFACE" 2>/dev/null # Add the new IP to the interface
 					fi
 					return 0
 				fi
