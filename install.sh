@@ -36,25 +36,20 @@ install -d -m 755 /var/log/sitepi
 
 # Download latest version
 echo -e "${GREEN}Downloading SitePi SDWAN...${NC}"
-LATEST_RELEASE=$(curl -s https://github.com/sitepi/sdwan/releases/download/v0.0.2/sitepi)
+LATEST_RELEASE=$(curl -s https://github.com/sitepi/sdwan/releases/download/v0.0.3/sitepi_0.0.3_all.deb)
 
-# Download sitepi program
-SITEPI_URL=$(echo "$LATEST_RELEASE" | grep -o 'https://.*sitepi"' | grep -v 'ubuntu\|install' | sed 's/"$//')
-if [ -z "$SITEPI_URL" ]; then
-    echo -e "${RED}Error: Failed to get sitepi download URL${NC}"
+# Download sitepi deb package
+DEB_URL=$(echo "$LATEST_RELEASE" | grep -o 'https://.*sitepi.*\.deb' | head -n 1)
+if [ -z "$DEB_URL" ]; then
+    echo -e "${RED}Error: Failed to get sitepi deb download URL${NC}"
     exit 1
 fi
-curl -L -o /usr/bin/sitepi "$SITEPI_URL"
-chmod +x /usr/bin/sitepi
+curl -L -o /tmp/sitepi.deb "$DEB_URL"
 
-# Download sitepi.ubuntu script
-UBUNTU_SCRIPT_URL=$(echo "$LATEST_RELEASE" | grep -o 'https://.*sitepi.ubuntu"' | sed 's/"$//')
-if [ -z "$UBUNTU_SCRIPT_URL" ]; then
-    echo -e "${RED}Error: Failed to get sitepi.ubuntu download URL${NC}"
-    exit 1
-fi
-curl -L -o /usr/bin/sitepi.ubuntu "$UBUNTU_SCRIPT_URL"
-chmod +x /usr/bin/sitepi.ubuntu
+# Install the downloaded deb package
+echo -e "${GREEN}Installing SitePi SDWAN...${NC}"
+dpkg -i /tmp/sitepi.deb || { echo -e "${RED}Error: Installation failed${NC}"; exit 1; }
+rm /tmp/sitepi.deb
 
 # Create default configuration
 if [ ! -f /etc/sitepi/config ]; then
