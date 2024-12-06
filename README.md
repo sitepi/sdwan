@@ -48,13 +48,18 @@ opkg install luci-app-sitepi_0.0.3_all.ipk
 
 #### Configuration
    1. Go to LuCI web interface
-   2. Navigate to Services -> Sitepi SDWAN
-   3. Configure:
-      - Enable the service
-      - Set WireGuard interface name
+   2. Navigate to Network -> Interfaces
+      - Add a new interface (type: WireGuard, name: your choice), press 'Create Interface'
+      - General Settings (Generate new key pair)
+      - Firewall Settings: (specify the interface to wan)
+      - press 'Save & Apply'
+   3. Navigate to Services -> Sitepi SDWAN
+   4. Configure:
+      - Enable the SitePi service
+      - Set the WireGuard interface name (the WireGuard interface you just created)
       - Optionally set server address
       - Optionally set provisioning code      # binding provisioning code
-   4. Save & Apply
+   5. Save & Apply
 
 ## Features
 

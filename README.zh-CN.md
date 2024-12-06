@@ -46,13 +46,18 @@ opkg install luci-app-sitepi_0.0.3_all.ipk
 
 #### 配置
    1. 访问 LuCI 网页界面
-   2. 导航到 服务 -> Sitepi SDWAN
-   3. 配置：
-      - 启用服务
-      - 设置 WireGuard 接口名称
+   2. 导航到 网络 -> 接口
+      - 添加一个新接口（类型：WireGuard，名称：自定义名称），点击 '创建接口'
+      - 一般设置（生成新的密钥对）
+      - 防火墙设置：（指定接口为 wan）
+      - 点击 '保存并应用'
+   3. 导航到 服务 -> Sitepi SDWAN
+   4. 配置：
+      - 启用 SitePi 服务
+      - 设置 WireGuard 接口名称（您刚刚创建的 WireGuard 接口）
       - 可选设置服务器地址
       - 可选设置配置代码      # 绑定配置代码
-   4. 保存并应用
+   5. 保存并应用
 
 ## License
 
