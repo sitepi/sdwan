@@ -2,20 +2,16 @@
 
 # Default parameters
 HOST="https://sitepi.net"
-NETWORK_ID=""
 INTERFACE=""
-
-# Global variables
-BASE_DELAY=1
-MAX_DELAY=60
+PROVISION_CODE=""
 
 # Help information
 show_help() {
 	echo "Usage: $0 [options]"
 	echo "Options:"
-	echo "	-h, --host        Server address (optional)"
 	echo "	-i, --interface   WireGuard interface name (required)"
-	echo "	-n, --network     Network ID (optional)"
+	echo "	-h, --host        Server address (optional)"
+	echo "	-p, --provision   Provisioning Code (optional)"
 	echo "	--help            Show this help message"
 	echo
 	echo "Example:"
@@ -72,21 +68,7 @@ check_commands() {
 # Create WireGuard interface
 create_wg_interface() {
 	echo "Creating WireGuard interface $INTERFACE..."
-	
-	# Check if the interface already exists
-	if ip link show "$INTERFACE" >/dev/null 2>&1; then
-		echo "Interface $INTERFACE already exists, using existing interface..."
-		# Get the public key of the existing interface
-		public_key=$(wg show "$INTERFACE" public-key)
-		if [ -z "$public_key" ]; then
-			echo "Error: Failed to get public key from existing interface"
-			exit 1
-		fi
-		echo "Using existing interface with public key: $public_key"
-		echo "$public_key"
-		return 0
-	fi
-	
+		
 	# Try to read configuration from /etc/wireguard
 	if [ -f "/etc/wireguard/$INTERFACE.conf" ]; then
 		echo "Found existing configuration in /etc/wireguard/$INTERFACE.conf"
@@ -236,10 +218,10 @@ while [ $# -gt 0 ]; do
 			fi
 			shift 2
 			;;
-		-n|--network)
-			NETWORK_ID="$2"
-			if [ -z "$NETWORK_ID" ]; then
-				echo "Error: --network requires a value"
+		-p|--provision)
+			PROVISION_CODE="$2"
+			if [ -z "$PROVISION_CODE" ]; then
+				echo "Error: --provision requires a value"
 				show_help
 			fi
 			shift 2
@@ -301,6 +283,10 @@ echo "Listen port: $LISTEN_PORT"
 random() {
 	awk -v min="$1" -v max="$2" 'BEGIN{srand(); print int(min+rand()*(max-min+1))}'
 }
+
+# Global variables
+BASE_DELAY=1
+MAX_DELAY=60
 
 # modify backoff algorithm
 do_with_retry() {
@@ -368,7 +354,7 @@ clear_session() {
 	SESSION_ID=""
 	NEXT_URL=""
 	ASSIGNED_IP=""
-	NETWORK_NAME=""
+	PROVISION_CODE=""
 }
 
 # Modify authorization
@@ -378,7 +364,7 @@ do_authorize() {
 		-H 'User-Agent: sitepi' \
 		-H "PUBKEY: $PUBKEY" \
 		-H "LISTEN-PORT: $LISTEN_PORT" \
-		${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
+		${PROVISION_CODE:+-H "PROVISION-CODE: $PROVISION_CODE"} \
 		"$HOST/authorize" 2>&1)
 	status=$?
 	
@@ -389,7 +375,7 @@ do_authorize() {
 			-H 'User-Agent: sitepi' \
 			-H "PUBKEY: $PUBKEY" \
 			-H "LISTEN-PORT: $LISTEN_PORT" \
-			${NETWORK_ID:+-H "NETWORK-ID: $NETWORK_ID"} \
+			${PROVISION_CODE:+-H "PROVISION-CODE: $PROVISION_CODE"} \
 			"$HOST/authorize" 2>&1)
 		status=$?
 	fi
@@ -449,8 +435,8 @@ do_authorize() {
 	return 0
 }
 
-# Modify SSE connection
-do_sse_connect() {
+# Modify connection
+do_connect() {
 	# Check if session information is valid
 	if [ -z "$SESSION_ID" ] || [ -z "$NEXT_URL" ]; then
 		printf "\033[33mMissing session information, need to re-authorize\033[0m\n"
@@ -543,14 +529,15 @@ process_message() {
 	
 	# Parse fields
 	local action="$1"
-	local peer_pubkey="$2"
-	local preshared_key="$3"
-	local endpoint="$4"
-	local allowed_ips="$5"
-	local keepalive="$6"
 	
 	case "$action" in
 		wg)
+			local peer_pubkey="$2"
+			local preshared_key="$3"
+			local endpoint="$4"
+			local allowed_ips="$5"
+			local keepalive="$6"
+
 			# Validate fields
 			if [ -n "$peer_pubkey" ] && [ -n "$keepalive" ]; then
 				# Check if it's our own public key
@@ -693,8 +680,8 @@ do
 		fi
 	fi
 		
-	# Try to establish SSE connection
-	if ! do_sse_connect; then
+	# Try to establish connection
+	if ! do_connect; then
 		if [ "$RUNNING" != "true" ]; then
 			cleanup
 			exit 0
@@ -705,7 +692,7 @@ do
 		continue
 	fi
 		
-	# If SSE connection is successful, wait a while before retrying
+	# If connection is successful, wait a while before retrying
 	# First connection waits randomly between 6-120 seconds
-	sleep $(random 6 120)
+	sleep $(random 10 120)
 done
