@@ -22,7 +22,7 @@ msgstr "コントローラー"
 msgid "Interface"
 msgstr "インターフェース"
 
-msgid "Network Token"
+msgid "Provision Code"
 msgstr "ネットワークトークン"
 
 msgid "Current status of SitePi SDWAN instances"

@@ -27,7 +27,7 @@ o.width = "10%"
 
 o = s:option(Value, "host", translate("Controller"))
 o.rmempty = true
-o.placeholder = "https://sitepi.net"
+o.placeholder = translate("https://sitepi.net")
 o.datatype = "host"
 o.validate = function(self, value, section)
     if value and #value > 0 then
@@ -64,7 +64,7 @@ o.validate = function(self, value, section)
 end
 o.width = "20%"
 
-o = s:option(Value, "network_id", translate("Network Token"))
+o = s:option(Value, "network_id", translate("Provision Code"))
 o.rmempty = true
 o.placeholder = translate("Optional")
 o.width = "20%"
@@ -72,7 +72,7 @@ o.password = true
 
 o = s:option(Value, "description", translate("Description"))
 o.rmempty = true
-o.placeholder = translate("Optional description")
+o.placeholder = translate("Optional")
 o.width = "20%"
 
 return m 

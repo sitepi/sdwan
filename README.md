@@ -4,7 +4,7 @@
 
 A lightweight and efficient Software-Defined Wide Area Network (SD-WAN) client implementation.
 
-## Get Network ID
+## Create a Network
 Visit https://sitepi.net/ to register an account, create a network, and input your site(public key) to bind to the network
 
 ## Provisioning Code

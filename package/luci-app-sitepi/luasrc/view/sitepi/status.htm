@@ -27,7 +27,9 @@
         html += '<div class="tr table-titles">';
         html += '<div class="th"><%:Public Key%></div>';
         html += '<div class="th"><%:Endpoint%></div>';
+        html += '<div class="th"><%:IP Address%></div>';
         html += '<div class="th"><%:Latest Handshake%></div>';
+        html += '<div class="th"><%:Transfer Rx/Tx%></div>';
         html += '</div>';
         
         if (instance.peers && instance.peers.length > 0) {
@@ -35,11 +37,13 @@
                 html += '<div class="tr">';
                 html += '<div class="td">' + (peer.public_key || '-') + '</div>';
                 html += '<div class="td">' + (peer.endpoint || '-') + '</div>';
+                html += '<div class="td">' + (peer.ipaddr || '-') + '</div>';
                 html += '<div class="td">' + (peer.latest_handshake || '-') + '</div>';
+                html += '<div class="td">' +  (peer.transfer_rx || '-') + '/' + (peer.transfer_tx || '-') + '</div>';
                 html += '</div>';
             });
         } else {
-            html += '<div class="tr"><div class="td" colspan="3"><em><%:No peers connected%></em></div></div>';
+            html += '<div class="tr"><div class="td" colspan="5"><em><%:No peers connected%></em></div></div>';
         }
         
         html += '</div></div>';

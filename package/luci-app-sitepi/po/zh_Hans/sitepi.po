@@ -22,8 +22,8 @@ msgstr "控制器"
 msgid "Interface"
 msgstr "接口"
 
-msgid "Network Token"
-msgstr "网络令牌"
+msgid "Provision Code"
+msgstr "配置代码"
 
 msgid "Current status of SitePi SDWAN instances"
 msgstr "SitePi SDWAN 实例当前状态"
@@ -60,3 +60,6 @@ msgstr "描述"
 
 msgid "Optional description"
 msgstr "可选描述" 
+
+msgid "https://sitepi.net"
+msgstr "https://sitepi.cn"

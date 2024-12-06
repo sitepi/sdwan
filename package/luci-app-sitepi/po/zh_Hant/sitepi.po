@@ -22,8 +22,8 @@ msgstr "控制器"
 msgid "Interface"
 msgstr "介面"
 
-msgid "Network Token"
-msgstr "網路權杖"
+msgid "Provision Code"
+msgstr "配置權杖"
 
 msgid "Current status of SitePi SDWAN instances"
 msgstr "SitePi SDWAN 執行個體目前狀態"

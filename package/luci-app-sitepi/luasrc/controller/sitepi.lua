@@ -61,6 +61,7 @@ function action_status_data()
                                 local peer = {
                                     public_key = fields[1],
                                     endpoint = fields[3] ~= "(none)" and fields[3] or "-",
+                                    ipaddr = fields[2] ~= "(none)" and fields[2] or "-",
                                     latest_handshake = "Never",
                                     transfer_rx = tonumber(fields[5]) or 0,
                                     transfer_tx = tonumber(fields[6]) or 0
