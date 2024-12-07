@@ -36,7 +36,7 @@ install -d -m 755 /var/log/sitepi
 
 # Download latest version
 echo -e "${GREEN}Downloading SitePi SDWAN...${NC}"
-LATEST_RELEASE=$(curl -s https://github.com/sitepi/sdwan/releases/download/v0.0.3/sitepi_0.0.3_all.deb)
+LATEST_RELEASE=$(curl -s https://github.com/sitepi/sdwan/releases/download/v0.0.5/sitepi_0.0.5_all.deb)
 
 # Download sitepi deb package
 DEB_URL=$(echo "$LATEST_RELEASE" | grep -o 'https://.*sitepi.*\.deb' | head -n 1)

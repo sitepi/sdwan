@@ -158,12 +158,12 @@ jobs:
         body: |
           ## SitePi SDWAN Release ${{ github.ref_name }}
           
-          ### Installation
-          Download and install the following packages:
-          - sitepi_${{ github.ref_name }}_all.ipk
-          - luci-app-sitepi_${{ github.ref_name }}_all.ipk
-          - sitepi_${{ github.ref_name }}_all.deb
+          ### SHA256 Checksums
+          ```
+          ${{ steps.sha.outputs.SUMS }}
+          ```
           
+          ### Installation
           #### OpenWrt
           ```bash
           opkg install sitepi_${{ github.ref_name }}_all.ipk
@@ -173,11 +173,6 @@ jobs:
           #### Ubuntu
           ```bash
           dpkg -i sitepi_${{ github.ref_name }}_all.deb
-          ```
-          
-          ### SHA256 Checksums
-          ```
-          ${{ steps.sha.outputs.SUMS }}
           ```
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

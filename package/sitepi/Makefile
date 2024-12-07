@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sitepi
-PKG_VERSION:=0.0.3
+PKG_VERSION:=0.0.5
 
 PKG_MAINTAINER:=SitePi
 PKG_LICENSE:=MIT
