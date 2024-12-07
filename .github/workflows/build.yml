@@ -25,7 +25,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
           gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
-          file wget liblua5.1-0-dev lua5.1 luarocks
+          file wget liblua5.1-0-dev lua5.1 luarocks rustc cargo
 
     - name: Cache OpenWrt SDK
       id: cache-sdk
@@ -124,6 +124,31 @@ jobs:
         # Create DEB package
         dpkg-deb --build deb-package
 
+    - name: Build Windows package
+      run: |
+        # Create necessary directories for Windows build
+        mkdir -p windows
+        cp -rf $GITHUB_WORKSPACE/windows/* windows/
+
+        # Build Windows version using Rust
+        cd windows
+        cargo build --release --target x86_64-pc-windows-gnu
+
+        # Create Windows package
+        mkdir -p sitepi-windows-x64
+        cp target/x86_64-pc-windows-gnu/release/sitepi.exe sitepi-windows-x64/
+        cp windows-nt/bin/amd64/wireguard.dll sitepi-windows-x64/
+        
+        # Create a simple installer script (optional)
+        echo "@echo off" > sitepi-windows-x64/install.bat
+        echo "echo Installing SitePi for Windows..." >> sitepi-windows-x64/install.bat
+        echo "copy sitepi.exe C:\\Program Files\\SitePi\\" >> sitepi-windows-x64/install.bat
+        echo "echo Installation complete." >> sitepi-windows-x64/install.bat
+        
+        cd ..
+        # Create a zip package for Windows
+        zip -r sitepi-windows-x64.zip sitepi-windows-x64
+
     - name: Collect artifacts
       run: |
         mkdir -p artifacts
@@ -132,6 +157,7 @@ jobs:
         find sdk/bin/packages -name "luci-app-sitepi_*.ipk" -exec cp {} artifacts/ \;
         # Collect DEB package
         cp deb-package.deb artifacts/sitepi_${GITHUB_REF_NAME#v}_all.deb
+        cp sitepi-windows-x64.zip artifacts/
 
     - name: List artifacts
       run: |
@@ -143,7 +169,7 @@ jobs:
       run: |
         cd artifacts
         echo "SUMS<<EOF" >> $GITHUB_OUTPUT
-        sha256sum *.ipk *.deb >> $GITHUB_OUTPUT
+        sha256sum *.ipk *.deb sitepi-windows-x64.zip >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Upload to GitHub Assets
