@@ -44,8 +44,8 @@ jobs:
         x86_64-w64-mingw32-strip target/x86_64-pc-windows-gnu/release/sitepi.exe
         i686-w64-mingw32-strip target/i686-pc-windows-gnu/release/sitepi.exe
 
-        cargo build --release --target x86_64-pc-windows-gnu
-        cargo build --release --target i686-pc-windows-gnu
+        # Use x86_64-w64-mingw32-windres to write version information
+        x86_64-w64-mingw32-windres -o resource.o resource.rc
 
         # Create Windows amd64 package
         mkdir -p sitepi-windows-x64
