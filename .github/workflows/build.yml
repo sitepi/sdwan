@@ -38,24 +38,30 @@ jobs:
         #rustup toolchain install stable-x86_64-pc-windows-gnu
 
         rustup default stable
+        rustup update
         rustup target add x86_64-pc-windows-gnu
+        rustup target add i686-pc-windows-gnu
 
         cargo build --release --target x86_64-pc-windows-gnu
+        cargo build --release --target i686-pc-windows-gnu
 
         # Create Windows amd64 package
         mkdir -p sitepi-windows-x64
         cp target/x86_64-pc-windows-gnu/release/sitepi.exe sitepi-windows-x64/
-        cp windows-nt/bin/amd64/wireguard.dll sitepi-windows-x64/
+        cp wireguard-nt/bin/amd64/wireguard.dll sitepi-windows-x64/
         
-        # Create a simple installer script (optional)
-        #echo "@echo off" > sitepi-windows-x64/install.bat
-        #echo "echo Installing SitePi for Windows..." >> sitepi-windows-x64/install.bat
-        #echo "copy sitepi.exe C:\\Program Files\\SitePi\\" >> sitepi-windows-x64/install.bat
-        #echo "echo Installation complete." >> sitepi-windows-x64/install.bat
-        
-        cd ..
         # Create a zip package for Windows
         zip -r sitepi-windows-x64.zip sitepi-windows-x64
+        mv sitepi-windows-x64.zip ..
+
+        # Create Windows i686 package
+        mkdir -p sitepi-windows-x86
+        cp target/i686-pc-windows-gnu/release/sitepi.exe sitepi-windows-x86/
+        cp wireguard-nt/bin/x86/wireguard.dll sitepi-windows-x86/
+        zip -r sitepi-windows-x86.zip sitepi-windows-x86
+        mv sitepi-windows-x86.zip ..
+
+        cd ..
 
     - name: Cache OpenWrt SDK
       id: cache-sdk
@@ -163,6 +169,7 @@ jobs:
         # Collect DEB package
         cp deb-package.deb artifacts/sitepi_${GITHUB_REF_NAME#v}_all.deb
         cp sitepi-windows-x64.zip artifacts/
+        cp sitepi-windows-x86.zip artifacts/
 
     - name: List artifacts
       run: |
