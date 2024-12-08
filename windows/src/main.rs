@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let exit_clone = Arc::clone(&exit); 
 
     ctrlc::set_handler(move || {
-        println!("接收到退出信号，正在关闭...");
+        println!("Received exit signal, shutting down...");
         exit_clone.store(true, std::sync::atomic::Ordering::Relaxed);
         std::process::exit(0);
     })?;

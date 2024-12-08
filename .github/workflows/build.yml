@@ -49,8 +49,9 @@ jobs:
         mkdir -p sitepi-windows-x64
         cp target/x86_64-pc-windows-gnu/release/sitepi.exe sitepi-windows-x64/
         cp wireguard-nt/bin/amd64/wireguard.dll sitepi-windows-x64/
-        
-        # Create a zip package for Windows
+        mkdir -p sitepi-windows-x64/configs
+
+        # Create a zip package for Windows amd64
         zip -r sitepi-windows-x64.zip sitepi-windows-x64
         mv sitepi-windows-x64.zip ..
 
@@ -58,6 +59,9 @@ jobs:
         mkdir -p sitepi-windows-x86
         cp target/i686-pc-windows-gnu/release/sitepi.exe sitepi-windows-x86/
         cp wireguard-nt/bin/x86/wireguard.dll sitepi-windows-x86/
+        mkdir -p sitepi-windows-x86/configs
+
+        # Create a zip package for Windows i686
         zip -r sitepi-windows-x86.zip sitepi-windows-x86
         mv sitepi-windows-x86.zip ..
 
@@ -181,7 +185,7 @@ jobs:
       run: |
         cd artifacts
         echo "SUMS<<EOF" >> $GITHUB_OUTPUT
-        sha256sum *.ipk *.deb sitepi-windows-x64.zip >> $GITHUB_OUTPUT
+        sha256sum *.ipk *.deb *.zip >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Upload to GitHub Assets

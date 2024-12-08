@@ -1,6 +1,6 @@
 [package]
 name = "sitepi"
-version = "0.1.0"
+version = "0.0.5"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,19 +10,14 @@ default-target = "x86_64-pc-windows-msvc"
 targets = ["aarch64-pc-windows-msvc", "i686-pc-windows-msvc", "x86_64-pc-windows-msvc"]
 
 [dependencies]
-env_logger = "0.11"
 x25519-dalek = { version = "2", default-features = false, features = ["static_secrets", "getrandom"] }
 base64 = "0.13"
-serde = "1.0"
 tokio = { version = "1.0", features = ["full"] } 
 wireguard-nt = "0.5"
 ipnet = "2.3"
-log = "0.4"
 bitflags = "2"
 getrandom = "0.2"
 libloading = "0.8"
-thiserror = "1.0"
-widestring = "0.4"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_Networking",
@@ -31,12 +26,6 @@ windows-sys = { version = "0.59", features = [
     "Win32_NetworkManagement_Ndis"
 ]}
 clap = { version = "4.4", features = ["derive"] }
-reqwest = { version = "0.11", features = ["json", "blocking"] }
+reqwest = { version = "0.12.9", features = ["json", "blocking"] }
 rand = "0.8"
 ctrlc = "3.4"
-
-[dev-dependencies]
-base64 = "0.13"
-env_logger = "0.11"
-ipnet = "2.3"
-x25519-dalek = { version = "2", default-features = false, features = ["static_secrets", "getrandom"] }
