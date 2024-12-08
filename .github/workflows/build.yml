@@ -67,20 +67,19 @@ jobs:
         cargo clean
         
         # Set environment variables - more conservative and secure compilation options
-        export RUSTFLAGS="-C target-feature=+crt-static,+guard-cf \
+        export RUSTFLAGS="-C target-feature=+crt-static \
           -C link-arg=-s \
           -C opt-level=1 \
           -C codegen-units=1 \
-          -C lto=fat \
+          -C lto=thin \
           -C debuginfo=0 \
           -C strip=symbols \
           -C control-flow-guard=yes \
-          -C link-arg=/DYNAMICBASE \
-          -C link-arg=/NXCOMPAT \
-          -C link-arg=/HIGHENTROPYVA \
-          -C link-arg=/LARGEADDRESSAWARE \
-          -C link-arg=/SUBSYSTEM:CONSOLE \
-          -C force-frame-pointers=yes"
+          -C link-arg=-Wl,--dynamicbase \
+          -C link-arg=-Wl,--nxcompat \
+          -C link-arg=-Wl,--high-entropy-va \
+          -C link-arg=-Wl,--large-address-aware \
+          -C link-arg=-Wl,--subsystem,console"
         export RUST_BACKTRACE=1
         export RUST_LOG=info
         
