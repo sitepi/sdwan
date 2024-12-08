@@ -25,7 +25,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
           gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
-          file wget liblua5.1-0-dev lua5.1 luarocks rustc cargo mingw-w64 wine
+          file wget liblua5.1-0-dev lua5.1 luarocks rustc cargo mingw-w64 wine osslsigncode
+
+    - name: Create Code Signing Certificate
+      run: |
+        # Generate a self-signed certificate for code signing
+        openssl req -x509 -newkey rsa:4096 -keyout codesign.key -out codesign.crt -days 365 -nodes \
+          -subj "/C=CN/ST=Beijing/L=Beijing/O=SitePi/OU=Development/CN=sitepi.cn"
+        # Convert to PFX format
+        openssl pkcs12 -export -out codesign.pfx -inkey codesign.key -in codesign.crt -passout pass:password
 
     - name: Build Windows package
       run: |
@@ -37,15 +45,29 @@ jobs:
         # Build Windows version using Rust
         cd windows
         # 添加优化和安全编译选项
-        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s" cargo build --release --target x86_64-pc-windows-gnu
-        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s" cargo build --release --target i686-pc-windows-gnu
+        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=true" cargo build --release --target x86_64-pc-windows-gnu
+        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=true" cargo build --release --target i686-pc-windows-gnu
 
         # Strip the binaries
         x86_64-w64-mingw32-strip target/x86_64-pc-windows-gnu/release/sitepi.exe
         i686-w64-mingw32-strip target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Use x86_64-w64-mingw32-windres to write version information
-        x86_64-w64-mingw32-windres -o resource.o resource.rc
+        # Sign the executables
+        osslsigncode sign -pkcs12 ../codesign.pfx -pass password \
+          -n "SitePi SDWAN Client" \
+          -i "https://sitepi.cn" \
+          -t http://timestamp.digicert.com \
+          -in target/x86_64-pc-windows-gnu/release/sitepi.exe \
+          -out target/x86_64-pc-windows-gnu/release/sitepi.exe.signed
+        mv target/x86_64-pc-windows-gnu/release/sitepi.exe.signed target/x86_64-pc-windows-gnu/release/sitepi.exe
+
+        osslsigncode sign -pkcs12 ../codesign.pfx -pass password \
+          -n "SitePi SDWAN Client" \
+          -i "https://sitepi.cn" \
+          -t http://timestamp.digicert.com \
+          -in target/i686-pc-windows-gnu/release/sitepi.exe \
+          -out target/i686-pc-windows-gnu/release/sitepi.exe.signed
+        mv target/i686-pc-windows-gnu/release/sitepi.exe.signed target/i686-pc-windows-gnu/release/sitepi.exe
 
         # Create Windows amd64 package
         mkdir -p sitepi-windows-x64

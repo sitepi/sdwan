@@ -14,14 +14,18 @@ fn main() {
             println!("cargo:warning=Set windres path to x86_64-w64-mingw32-windres");
         }
         
-        // 设置版本信息
+        // 设置版本信息和详细元数据
         res.set("FileVersion", "0.0.8.0")
            .set("ProductVersion", "0.0.8.0")
-           .set("FileDescription", "Site Pi Client")
-           .set("ProductName", "Site Pi")
+           .set("FileDescription", "SitePi SDWAN Client - Secure Network Connection Tool")
+           .set("ProductName", "SitePi SDWAN")
            .set("OriginalFilename", "sitepi.exe")
-           .set("LegalCopyright", "Copyright © 2024")
-           .set("CompanyName", "Site Pi");
+           .set("LegalCopyright", "Copyright © 2024 SitePi")
+           .set("CompanyName", "SitePi")
+           .set("InternalName", "sitepi")
+           .set("Comments", "SitePi SDWAN Client for secure and reliable network connections")
+           .set("Language", "0804")  // 简体中文
+           .set("CharacterSet", "04E4");  // GB2312
 
         // 编译资源
         match res.compile() {
