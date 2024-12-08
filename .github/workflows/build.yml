@@ -68,10 +68,8 @@ jobs:
         
         # Set environment variables - more conservative and secure compilation options
         export RUSTFLAGS="-C target-feature=+crt-static \
-          -C link-arg=-s \
-          -C opt-level=1 \
-          -C codegen-units=1 \
-          -C lto=thin \
+          -C opt-level=2 \
+          -C codegen-units=16 \
           -C debuginfo=0 \
           -C strip=symbols \
           -C control-flow-guard=yes \
@@ -81,43 +79,7 @@ jobs:
         export RUST_BACKTRACE=1
         export RUST_LOG=info
         
-        # Create self-verification code
-        cat > src/verify.rs << 'EOF'
-        use std::env;
-        use std::path::Path;
-        use std::fs;
-
-        pub fn verify_binary_integrity() -> bool {
-            if let Ok(exe_path) = env::current_exe() {
-                if let Ok(metadata) = fs::metadata(&exe_path) {
-                    // Check if file size is within reasonable range
-                    if metadata.len() < 100_000 || metadata.len() > 10_000_000 {
-                        return false;
-                    }
-                    
-                    // Check file name
-                    if let Some(file_name) = exe_path.file_name() {
-                        if file_name != "sitepi.exe" {
-                            return false;
-                        }
-                    }
-                    
-                    // Check if in correct directory structure
-                    if let Some(parent) = exe_path.parent() {
-                        let wireguard_dll = parent.join("wireguard.dll");
-                        if !wireguard_dll.exists() {
-                            return false;
-                        }
-                    }
-                    
-                    return true;
-                }
-            }
-            false
-        }
-        EOF
-
-        # Create resource file
+        # Create resource file with more detailed information
         cat > sitepi.rc << 'EOF'
         #include <winver.h>
         #include <winuser.h>
@@ -138,15 +100,14 @@ jobs:
                 BLOCK "080404B0"
                 BEGIN
                     VALUE "CompanyName",      "SitePi Technology Co., Ltd.\0"
-                    VALUE "FileDescription",  "SitePi Enterprise SDWAN Client - Secure Network Management Software\0"
+                    VALUE "FileDescription",  "SitePi Enterprise SDWAN Client\0"
                     VALUE "FileVersion",      "0.0.8.0\0"
                     VALUE "InternalName",     "sitepi\0"
-                    VALUE "LegalCopyright",   "Copyright © 2024 SitePi Technology Co., Ltd. All rights reserved.\0"
+                    VALUE "LegalCopyright",   "Copyright © 2024 SitePi Technology Co., Ltd.\0"
                     VALUE "OriginalFilename", "sitepi.exe\0"
                     VALUE "ProductName",      "SitePi Enterprise SDWAN\0"
                     VALUE "ProductVersion",   "0.0.8.0\0"
-                    VALUE "Comments",         "Enterprise SDWAN client with advanced security features. Digitally signed and verified.\0"
-                    VALUE "LegalTrademarks",  "SitePi™ is a trademark of SitePi Technology Co., Ltd.\0"
+                    VALUE "Comments",         "Enterprise SDWAN client for secure network connections\0"
                 END
             END
             BLOCK "VarFileInfo"
@@ -156,7 +117,7 @@ jobs:
         END
         EOF
 
-        # Create application manifest file
+        # Create application manifest with minimal permissions
         cat > sitepi.manifest << 'EOF'
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
@@ -181,28 +142,14 @@ jobs:
             <application xmlns="urn:schemas-microsoft-com:asm.v3">
                 <windowsSettings>
                     <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</dpiAware>
-                    <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
                     <longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">true</longPathAware>
-                    <heapType xmlns="http://schemas.microsoft.com/SMI/2020/WindowsSettings">SegmentHeap</heapType>
                 </windowsSettings>
             </application>
-            <dependency>
-                <dependentAssembly>
-                    <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" 
-                        processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
-                </dependentAssembly>
-            </dependency>
-            <ms_compatibility:security xmlns:ms_compatibility="urn:schemas-microsoft-com:compatibility.v1">
-                <ms_compatibility:security>
-                    <ms_compatibility:accessControl>true</ms_compatibility:accessControl>
-                    <ms_compatibility:capabilities>
-                        <ms_compatibility:capability>networkClient</ms_compatibility:capability>
-                        <ms_compatibility:capability>internetClient</ms_compatibility:capability>
-                    </ms_compatibility:capabilities>
-                </ms_compatibility:security>
-            </ms_compatibility:security>
         </assembly>
         EOF
+
+        # Remove verify.rs as it may trigger false positives
+        rm -f src/verify.rs
 
         # Compile resource files
         x86_64-w64-mingw32-windres sitepi.rc -O coff -o sitepi.res
