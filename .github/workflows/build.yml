@@ -171,7 +171,7 @@ jobs:
         find sdk/bin/packages -name "sitepi_*.ipk" -exec cp {} artifacts/ \;
         find sdk/bin/packages -name "luci-app-sitepi_*.ipk" -exec cp {} artifacts/ \;
         # Collect DEB package
-        cp deb-package.deb artifacts/sitepi_${GITHUB_REF_NAME#v}_all.deb
+        cp deb-package.deb artifacts/sitepi-linux_${GITHUB_REF_NAME#v}_all.deb
         cp sitepi-windows-x64.zip artifacts/
         cp sitepi-windows-x86.zip artifacts/
 
@@ -214,7 +214,7 @@ jobs:
           
           #### Ubuntu
           ```bash
-          dpkg -i sitepi_${{ github.ref_name }}_all.deb
+          dpkg -i sitepi-linux_${{ github.ref_name }}_all.deb
           ```
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
