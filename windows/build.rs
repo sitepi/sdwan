@@ -25,8 +25,7 @@ fn main() {
            .set("InternalName", "sitepi")
            .set("Comments", "Enterprise-grade SDWAN client for secure and reliable network connections. Verified and digitally signed by SitePi Technology.")
            .set("Language", "0804")  // 简体中文
-           .set("CharacterSet", "04E4")  // GB2312
-           .set_icon("../assets/sitepi.ico");  // 确保图标文件存在
+           .set("CharacterSet", "04E4"); 
 
         // 编译资源
         match res.compile() {
