@@ -17,15 +17,17 @@ fn main() {
         // 设置版本信息和详细元数据
         res.set("FileVersion", "0.0.8.0")
            .set("ProductVersion", "0.0.8.0")
-           .set("FileDescription", "SitePi SDWAN Client - Enterprise Network Security Tool")
-           .set("ProductName", "SitePi SDWAN Enterprise")
+           .set("FileDescription", "SitePi Enterprise SDWAN Client")
+           .set("ProductName", "SitePi Enterprise SDWAN")
            .set("OriginalFilename", "sitepi.exe")
-           .set("LegalCopyright", "Copyright © 2024 SitePi Technology Co., Ltd.")
-           .set("CompanyName", "SitePi Technology")
+           .set("LegalCopyright", "Copyright © 2024 SitePi Technology Co., Ltd. All rights reserved.")
+           .set("CompanyName", "SitePi Technology Co., Ltd.")
            .set("InternalName", "sitepi")
-           .set("Comments", "Enterprise-grade SDWAN client for secure and reliable network connections. Verified and digitally signed by SitePi Technology.")
+           .set("Comments", "Enterprise SDWAN client for secure network connections. Licensed and distributed by SitePi Technology.")
            .set("Language", "0804")  // 简体中文
-           .set("CharacterSet", "04E4"); 
+           .set("CharacterSet", "04E4")  // GB2312
+           .set("PrivateBuild", "Release Build")
+           .set("SpecialBuild", "Enterprise Edition");
 
         // 编译资源
         match res.compile() {

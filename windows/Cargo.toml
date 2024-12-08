@@ -3,6 +3,10 @@ name = "sitepi"
 version = "0.0.8"
 edition = "2021"
 build = "build.rs"
+authors = ["SitePi Technology <support@sitepi.cn>"]
+description = "SitePi SDWAN Enterprise Client"
+license = "MIT"
+repository = "https://github.com/sitepi/sdwan"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,8 +20,8 @@ x25519-dalek = { version = "2", default-features = false, features = ["static_se
 base64 = "0.22.1"
 ipnet = "2.3"
 clap = { version = "4.4", features = ["derive"] }
-reqwest = { version = "0.12.9", features = ["json", "blocking"] }
-rand = "0.8"
+reqwest = { version = "0.12.9", features = ["json", "blocking", "default-tls"], default-features = false }
+rand = { version = "0.8", features = ["std", "std_rng"], default-features = false }
 ctrlc = "3.4"
 
 [build-dependencies]
@@ -25,14 +29,20 @@ winres = "0.1"
 
 [profile.release]
 opt-level = 3
-lto = true
+lto = "thin"
 codegen-units = 1
-panic = 'abort'
-strip = true
+panic = "unwind"
+strip = "debuginfo"
+debug = false
+incremental = false
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "libloaderapi"] }
 
-# 设置Windows子系统为控制台
+# Set the Windows subsystem to console
 [target.x86_64-pc-windows-gnu]
-rustflags = ["-C", "link-args=-Wl,--subsystem,console"]
+rustflags = ["-C", "link-args=-Wl,--subsystem,console", "-C", "target-cpu=x86-64"]
+
+# Set the Windows subsystem to console
+[target.i686-pc-windows-gnu]
+rustflags = ["-C", "link-args=-Wl,--subsystem,console", "-C", "target-cpu=i686"]
