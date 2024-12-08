@@ -41,7 +41,13 @@ winapi = { version = "0.3", features = ["winuser", "libloaderapi"] }
 
 # Set the Windows subsystem to console
 [target.x86_64-pc-windows-gnu]
-rustflags = ["-C", "link-args=-Wl,--subsystem,console -Wl,--dynamicbase -Wl,--nxcompat -Wl,--high-entropy-va", "-C", "target-cpu=x86-64"]
+rustflags = [
+    "-C", "link-args=-Wl,--subsystem,console",
+    "-C", "link-args=-Wl,--dynamicbase",
+    "-C", "link-args=-Wl,--nxcompat",
+    "-C", "link-args=-Wl,--high-entropy-va",
+    "-C", "target-cpu=x86-64"
+]
 
 # Set the Windows subsystem to console
 [target.i686-pc-windows-gnu]
