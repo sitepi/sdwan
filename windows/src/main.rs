@@ -11,7 +11,7 @@ use std::sync::Mutex;
 // Add command line arguments struct
 #[derive(Parser)]
 #[command(name = "sitepi")]
-#[command(about = "SitePi SD-WAN Client (0.0.6)", long_about = None)]
+#[command(about = "SitePi SD-WAN Client (0.0.8)", long_about = None)]
 struct Cli {
     /// Server address
     #[arg(short = 's', long = "server", default_value = "https://sitepi.cn")]
