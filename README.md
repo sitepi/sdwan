@@ -20,8 +20,8 @@ Also, you can input the provisioning code of the network when installing the sit
 sudo apt update
 sudo apt install -y wireguard-tools curl
 
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.6/sitepi-linux_0.0.6_all.deb
-sudo dpkg -i sitepi-linux_0.0.6_all.deb
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.6/sitepi_0.0.6_all.deb
+sudo dpkg -i sitepi_0.0.6_all.deb
 
 sudo systemctl enable sitepi.service
 ```

@@ -6,11 +6,12 @@ use std::net::Ipv4Addr;
 use std::sync::Arc;
 // use ipnet::{Ipv4Net};
 use clap::Parser;
+use std::sync::Mutex;
 
 // Add command line arguments struct
 #[derive(Parser)]
 #[command(name = "sitepi")]
-#[command(about = "SitePi SD-WAN Client", long_about = None)]
+#[command(about = "SitePi SD-WAN Client (0.0.6)", long_about = None)]
 struct Cli {
     /// Server address
     #[arg(short = 's', long = "server", default_value = "https://sitepi.cn")]
@@ -24,6 +25,9 @@ struct Cli {
     #[arg(short = 'p', long = "provision")]
     provision: Option<String>,
 }
+
+
+static PEERS: Mutex<Vec<wireguard_nt::SetPeer>> = Mutex::new(Vec::new());
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse command line arguments
@@ -74,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // Check if the configuration file exists for the interface
                     let config_path = format!("configs/{}.conf", interface);
                     if std::path::Path::new(&config_path).exists() {
-                        println!("found {}.conf, read it", interface);
+                        println!("Reading the existing configuration file: {}.conf", interface);
                         // Read the existing configuration
                         let config_content = std::fs::read_to_string(&config_path)
                             .expect("Failed to read configuration file");
@@ -129,8 +133,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(adapter.set_logging(wireguard_nt::AdapterLoggingLevel::OnWithPrefix));
 
     let config = adapter.get_config();
-    println!(" public_key: {:?}", base64::encode(config.public_key));
-    println!("listen_port: {:?}", config.listen_port);
+    println!(" public_key: {}", base64::encode(config.public_key));
+    println!("listen_port: {}", config.listen_port);
 
     // Since the clone method is not found, we will remove the cloning of adapter
     // let adapter2 = Arc::clone(&adapter); // Use the original adapter instead of cloning
@@ -207,7 +211,7 @@ fn do_authorize(
         format!("{}/authorize", host)
     };
 
-    println!("Authorizing");
+    println!("== Authorizing..");
 
     let mut request = client.post(url).header("User-Agent", "sitepi");
 
@@ -256,19 +260,18 @@ fn do_authorize(
             .map(String::from);
 
         println!(
-            " x-session: {}",
-            x_session.as_ref().unwrap_or(&String::new())
-        );
+            "   SESSION: {}",
+            x_session.as_ref().unwrap_or(&String::new()));
         println!(
-            " x-network: {}",
-            x_network.as_ref().unwrap_or(&String::new())
-        );
+            "  next URL: {}", x_url.as_ref().unwrap_or(&String::new()));
         println!(
-            "  x-ipaddr: {}",
-            x_ipaddr.as_ref().unwrap_or(&String::new())
-        );
-        println!("     x-url: {}", x_url.as_ref().unwrap_or(&String::new()));
-        println!("   x-proxy: {}", x_proxy.as_ref().unwrap_or(&String::new()));
+            "next PROXY: {}", x_proxy.as_ref().unwrap_or(&String::new()));
+        println!(
+            "   NETWORK: {}",
+            x_network.as_ref().unwrap_or(&String::new()));
+        println!(
+            "    IPADDR: {}",
+            x_ipaddr.as_ref().unwrap_or(&String::new()));
 
         // Define set_ip as a local closure
         let set_ip = |ipaddr: Option<String>| {
@@ -314,7 +317,7 @@ fn do_connect(
     // Add adapter parameter
 
     if let Some(url) = x_url {
-        println!("connect to {}", url);
+        println!("== connect to {}", url);
         let client = if let Some(proxy) = x_proxy {
             let proxy = reqwest::Proxy::all(proxy).expect("Invalid proxy URL");
             reqwest::blocking::Client::builder()
@@ -379,10 +382,6 @@ fn do_connect(
 }
 
 fn handle_message(message: &str, adapter: &Arc<wireguard_nt::Adapter>) {
-    // Process the incoming message
-    println!("{}", message);
-    // Here you can add more logic to handle the message as needed
-
     let data: Vec<&str> = message.split_whitespace().collect();
     // println!("Split data: {:?}", data);
 
@@ -399,43 +398,41 @@ fn handle_message(message: &str, adapter: &Arc<wireguard_nt::Adapter>) {
             keepalive = "0";
         }
 
-        // 如果IP不是x，则创建IpNet
+        // If the IP is not 'x', create an IpNet
+        // let ip_net = IpNet::new(ip_str.parse().unwrap(), 32).unwrap();
         let ips = if ip_str != "x" {
             vec![IpNet::new(ip_str.parse().unwrap(), 32).unwrap()]
         } else {
             vec![]
         };
 
-        let stats = adapter.get_config();
-        
-        let mut peers = Vec::new();
-
-        for peer in stats.peers {
-
-            peers.push(wireguard_nt::SetPeer {
-                public_key: Some(peer.public_key),
-                preshared_key: None,
-                keep_alive: Some(peer.persistent_keepalive), // Changed from keep_alive to persistent_keepalive
-                allowed_ips: peer.allowed_ips.clone(),
-                endpoint: peer.endpoint.clone(),
-            });
-        }
-
-        peers.push(wireguard_nt::SetPeer {
+        let peer = wireguard_nt::SetPeer {
             public_key: Some(base64::decode(pubkey).unwrap().try_into().unwrap()),
             preshared_key: None,
             keep_alive: Some(keepalive.parse().unwrap()),
             allowed_ips: ips.clone(),
             endpoint: endpoint.parse().unwrap(),
-        });
+        };
 
-        // Add peer
+        println!(" peer: {}", pubkey);
+
+        // 使用 Mutex 安全地修改 PEERS
+        let mut peers = PEERS.lock().unwrap();
+        if !peers.iter().any(|p| p.public_key == peer.public_key) {
+            peers.push(peer);
+        } else {
+            peers.retain(|p| p.public_key != peer.public_key);
+            peers.push(peer);
+        }
+
+        // 创建接口配置时克隆 peers
         let interface = wireguard_nt::SetInterface {
             listen_port: None,
             public_key: None,
             private_key: None,
-            peers: peers,
+            peers: peers.clone(),
         };
+        
         // Set the config our adapter will use
         // This lets it know about the peers and keys
         adapter.set_config(&interface).unwrap();
@@ -444,7 +441,7 @@ fn handle_message(message: &str, adapter: &Arc<wireguard_nt::Adapter>) {
         for ip in &ips { // Use a reference to avoid moving the value
             // Here you would typically call a function to add the route
             // For example: adapter.add_route(ip).unwrap();
-            println!("Adding route for IP: {}", ip);
+            println!(" add route for IP: {}", ip);
         }
     }
 }
