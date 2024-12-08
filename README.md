@@ -12,7 +12,7 @@ Also, you can input the provisioning code of the network when installing the sit
 
 ## Requirements
 
-- Linux/OpenWrt
+- Windows/Linux/OpenWrt
 - Network interface with root/admin privileges  
 
 ### Ubuntu
@@ -20,8 +20,8 @@ Also, you can input the provisioning code of the network when installing the sit
 sudo apt update
 sudo apt install -y wireguard-tools curl
 
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.5/sitepi_0.0.5_all.deb
-sudo dpkg -i sitepi_0.0.5_all.deb
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.6/sitepi_0.0.6_all.deb
+sudo dpkg -i sitepi_0.0.6_all.deb
 
 sudo systemctl enable sitepi.service
 ```
@@ -37,11 +37,11 @@ sudo service sitepi {status|start|stop|restart}
 #### Download the packages and install
 ```bash
 cd /tmp
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.5/sitepi_0.0.5_all.ipk
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.5/luci-app-sitepi_0.0.5_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.6/sitepi_0.0.6_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.6/luci-app-sitepi_0.0.6_all.ipk
 
-opkg install sitepi_0.0.5_all.ipk
-opkg install luci-app-sitepi_0.0.5_all.ipk
+opkg install sitepi_0.0.6_all.ipk
+opkg install luci-app-sitepi_0.0.6_all.ipk
 ```
 
 - The architecture is platform-independent. All routers use the same ipk.

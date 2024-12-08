@@ -10,7 +10,7 @@
 
 ## 系统要求
 
-- Linux/OpenWrt
+- Windows/Linux/OpenWrt
 - 具有 root/管理员权限的网络接口
 
 ### Ubuntu
@@ -18,8 +18,8 @@
 sudo apt update
 sudo apt install -y wireguard-tools curl
 
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.5/sitepi_0.0.5_all.deb
-sudo dpkg -i sitepi_0.0.5_all.deb
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.6/sitepi_0.0.6_all.deb
+sudo dpkg -i sitepi_0.0.6_all.deb
 
 sudo systemctl enable sitepi.service
 ```
@@ -35,11 +35,11 @@ sudo service sitepi {status|start|stop|restart}
 #### 下载并安装
 ```bash
 cd /tmp
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.5/sitepi_0.0.5_all.ipk
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.5/luci-app-sitepi_0.0.5_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.6/sitepi_0.0.6_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.6/luci-app-sitepi_0.0.6_all.ipk
 
-opkg install sitepi_0.0.5_all.ipk
-opkg install luci-app-sitepi_0.0.5_all.ipk
+opkg install sitepi_0.0.6_all.ipk
+opkg install luci-app-sitepi_0.0.6_all.ipk
 ```
 
 - 安装文件架构是平台无关的。所有路由器使用相同的ipk。
