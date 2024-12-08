@@ -40,6 +40,10 @@ jobs:
         RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s" cargo build --release --target x86_64-pc-windows-gnu
         RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s" cargo build --release --target i686-pc-windows-gnu
 
+        # Strip the binaries
+        x86_64-w64-mingw32-strip target/x86_64-pc-windows-gnu/release/sitepi.exe
+        i686-w64-mingw32-strip target/i686-pc-windows-gnu/release/sitepi.exe
+
         cargo build --release --target x86_64-pc-windows-gnu
         cargo build --release --target i686-pc-windows-gnu
 
@@ -48,18 +52,6 @@ jobs:
         cp target/x86_64-pc-windows-gnu/release/sitepi.exe sitepi-windows-x64/
         cp wireguard-nt/bin/amd64/wireguard.dll sitepi-windows-x64/
         mkdir -p sitepi-windows-x64/configs
-        x86_64-w64-mingw32-strip sitepi-windows-x64/sitepi.exe
-
-        wget https://github.com/electron/rcedit/releases/download/v1.1.1/rcedit-x64.exe
-        chmod +x rcedit-x64.exe
-
-        wine ./rcedit-x64.exe sitepi-windows-x64/sitepi.exe \
-          --set-version-string "CompanyName" "SitePi" \
-          --set-version-string "FileDescription" "SitePi SDWAN Client" \
-          --set-version-string "LegalCopyright" "Copyright (C) SitePi" \
-          --set-version-string "ProductName" "SitePi SDWAN" \
-          --set-file-version "${GITHUB_REF#refs/tags/}" \
-          --set-product-version "${GITHUB_REF#refs/tags/}"
 
         # Create a zip package for Windows amd64
         zip -r sitepi-windows-x64.zip sitepi-windows-x64
@@ -70,18 +62,7 @@ jobs:
         cp target/i686-pc-windows-gnu/release/sitepi.exe sitepi-windows-x86/
         cp wireguard-nt/bin/x86/wireguard.dll sitepi-windows-x86/
         mkdir -p sitepi-windows-x86/configs
-        i686-w64-mingw32-strip sitepi-windows-x86/sitepi.exe
         
-        wget https://github.com/electron/rcedit/releases/download/v1.1.1/rcedit-x86.exe
-        chmod +x rcedit-x86.exe
-        wine ./rcedit-x86.exe sitepi-windows-x86/sitepi.exe \
-          --set-version-string "CompanyName" "SitePi" \
-          --set-version-string "FileDescription" "SitePi SDWAN Client" \
-          --set-version-string "LegalCopyright" "Copyright (C) SitePi" \
-          --set-version-string "ProductName" "SitePi SDWAN" \
-          --set-file-version "${GITHUB_REF#refs/tags/}" \
-          --set-product-version "${GITHUB_REF#refs/tags/}"
-
         # Create a zip package for Windows i686
         zip -r sitepi-windows-x86.zip sitepi-windows-x86
         mv sitepi-windows-x86.zip ..

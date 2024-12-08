@@ -2,6 +2,7 @@
 name = "sitepi"
 version = "0.0.8"
 edition = "2021"
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -18,3 +19,6 @@ clap = { version = "4.4", features = ["derive"] }
 reqwest = { version = "0.12.9", features = ["json", "blocking"] }
 rand = "0.8"
 ctrlc = "3.4"
+
+[build-dependencies]
+winres = "0.1"
