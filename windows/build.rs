@@ -6,6 +6,7 @@ fn main() {
     if cfg!(target_os = "windows") || std::env::var("TARGET").unwrap_or_default().contains("windows") {
         let mut res = winres::WindowsResource::new();
         
+        // 检查是否在 Linux 下交叉编译
         if !cfg!(target_os = "windows") {
             // 设置工具链路径
             res.set_ar_path("/usr/bin/x86_64-w64-mingw32-ar");
@@ -15,6 +16,7 @@ fn main() {
         
         // 设置版本信息
         res.set("FileVersion", "0.0.8.0")
+           .set("ProductVersion", "0.0.8.0")
            .set("FileDescription", "Site Pi Client")
            .set("ProductName", "Site Pi")
            .set("OriginalFilename", "sitepi.exe")
