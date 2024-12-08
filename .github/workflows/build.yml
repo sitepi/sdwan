@@ -29,11 +29,15 @@ jobs:
 
     - name: Create Code Signing Certificate
       run: |
-        # Generate a self-signed certificate for code signing
+        # Generate a stronger self-signed certificate for code signing
         openssl req -x509 -newkey rsa:4096 -keyout codesign.key -out codesign.crt -days 365 -nodes \
-          -subj "/C=CN/ST=Beijing/L=Beijing/O=SitePi/OU=Development/CN=sitepi.cn"
-        # Convert to PFX format
-        openssl pkcs12 -export -out codesign.pfx -inkey codesign.key -in codesign.crt -passout pass:password
+          -subj "/C=CN/ST=Beijing/L=Beijing/O=SitePi Technology/OU=Software Development/CN=sitepi.cn" \
+          -addext "extendedKeyUsage=codeSigning" \
+          -addext "keyUsage=digitalSignature"
+
+        # Convert to PFX format with strong encryption
+        openssl pkcs12 -export -out codesign.pfx -inkey codesign.key -in codesign.crt -passout pass:password \
+          -certfile codesign.crt -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES
 
     - name: Build Windows package
       run: |
@@ -42,28 +46,33 @@ jobs:
         rustup target add x86_64-pc-windows-gnu
         rustup target add i686-pc-windows-gnu
 
-        # Build Windows version using Rust
+        # Build Windows version using Rust with security flags
         cd windows
-        # 添加优化和安全编译选项
-        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=true" cargo build --release --target x86_64-pc-windows-gnu
-        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=true" cargo build --release --target i686-pc-windows-gnu
+        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=true -C debuginfo=0 -C strip=symbols" cargo build --release --target x86_64-pc-windows-gnu
+        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=true -C debuginfo=0 -C strip=symbols" cargo build --release --target i686-pc-windows-gnu
 
-        # Strip the binaries
-        x86_64-w64-mingw32-strip target/x86_64-pc-windows-gnu/release/sitepi.exe
-        i686-w64-mingw32-strip target/i686-pc-windows-gnu/release/sitepi.exe
+        # Strip debug symbols and other metadata
+        x86_64-w64-mingw32-strip --strip-all target/x86_64-pc-windows-gnu/release/sitepi.exe
+        i686-w64-mingw32-strip --strip-all target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Sign the executables
-        osslsigncode sign -pkcs12 ../codesign.pfx -pass password \
+        # Sign the executables with enhanced options
+        osslsigncode sign \
+          -pkcs12 ../codesign.pfx \
+          -pass password \
           -n "SitePi SDWAN Client" \
           -i "https://sitepi.cn" \
+          -h sha384 \
           -t http://timestamp.digicert.com \
           -in target/x86_64-pc-windows-gnu/release/sitepi.exe \
           -out target/x86_64-pc-windows-gnu/release/sitepi.exe.signed
         mv target/x86_64-pc-windows-gnu/release/sitepi.exe.signed target/x86_64-pc-windows-gnu/release/sitepi.exe
 
-        osslsigncode sign -pkcs12 ../codesign.pfx -pass password \
+        osslsigncode sign \
+          -pkcs12 ../codesign.pfx \
+          -pass password \
           -n "SitePi SDWAN Client" \
           -i "https://sitepi.cn" \
+          -h sha384 \
           -t http://timestamp.digicert.com \
           -in target/i686-pc-windows-gnu/release/sitepi.exe \
           -out target/i686-pc-windows-gnu/release/sitepi.exe.signed
