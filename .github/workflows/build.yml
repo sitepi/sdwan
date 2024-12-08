@@ -89,7 +89,6 @@ jobs:
           -i "https://sitepi.cn" \
           -h sha384 \
           -t http://timestamp.digicert.com \
-          -TSA-CAfile ../digicert.crt \
           -in target/x86_64-pc-windows-gnu/release/sitepi.exe \
           -out target/x86_64-pc-windows-gnu/release/sitepi.exe.signed
         mv target/x86_64-pc-windows-gnu/release/sitepi.exe.signed target/x86_64-pc-windows-gnu/release/sitepi.exe
@@ -101,14 +100,18 @@ jobs:
           -i "https://sitepi.cn" \
           -h sha384 \
           -t http://timestamp.digicert.com \
-          -TSA-CAfile ../digicert.crt \
           -in target/i686-pc-windows-gnu/release/sitepi.exe \
           -out target/i686-pc-windows-gnu/release/sitepi.exe.signed
         mv target/i686-pc-windows-gnu/release/sitepi.exe.signed target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Verify signatures (using self-signed certificate and timestamp certificate)
-        osslsigncode verify -CAfile ../ca-chain.crt -TSA-CAfile ../digicert.crt target/x86_64-pc-windows-gnu/release/sitepi.exe || true
-        osslsigncode verify -CAfile ../ca-chain.crt -TSA-CAfile ../digicert.crt target/i686-pc-windows-gnu/release/sitepi.exe || true
+        # Verify signature (using self-signed certificate)
+        osslsigncode verify \
+          -in target/x86_64-pc-windows-gnu/release/sitepi.exe \
+          -CAfile ../ca-chain.crt || true
+
+        osslsigncode verify \
+          -in target/i686-pc-windows-gnu/release/sitepi.exe \
+          -CAfile ../ca-chain.crt || true
 
         # Create a file containing version information
         echo "SitePi Enterprise SDWAN Client v0.0.8" > version.txt
