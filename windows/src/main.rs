@@ -7,6 +7,7 @@ use std::sync::Arc;
 // use ipnet::{Ipv4Net};
 use clap::Parser;
 use std::sync::Mutex;
+use base64::Engine;
 
 // Add command line arguments struct
 #[derive(Parser)]
@@ -87,11 +88,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             if line.starts_with("PrivateKey") {
                                 let parts: Vec<&str> = line.split('=').collect();
                                 if parts.len() >= 2 {
-                                    let private_key = parts[1].trim();
-                                    // Convert the private key from base64
-                                    let decoded_key = base64::decode(private_key)
-                                        .expect("Invalid base64 private key");
-                                    private_bytes.copy_from_slice(&decoded_key);
+                                    let private_key = parts[1].trim().to_owned() + "=";
+                                    
+                                    match base64::engine::general_purpose::STANDARD.decode(private_key) {
+                                        Ok(decoded_key) => {
+                                            if decoded_key.len() == 32 {
+                                                private_bytes.copy_from_slice(&decoded_key);
+                                            } else {
+                                                eprintln!("Error: Private key length is incorrect, should be 32 bytes, but got {} bytes", decoded_key.len());
+                                                std::process::exit(1);
+                                            }
+                                        },
+                                        Err(e) => {
+                                            eprintln!("Error: Failed to decode private key from base64: {}", e);
+                                            std::process::exit(1);
+                                        }
+                                    }
                                 }
                             } else if line.starts_with("ListenPort") {
                                 let parts: Vec<&str> = line.split('=').collect();
@@ -104,7 +116,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("no {}.conf found, create it", interface);
                         // Generate a random port number between 1024 and 65535
                         port = rand::thread_rng().gen_range(1024..65535);
-                        let new_private_key = base64::encode(&private_bytes);
+                        let new_private_key = base64::engine::general_purpose::STANDARD.encode(&private_bytes);
                         let new_config = format!(
                             "[Interface]\nPrivateKey = {}\nListenPort = {}\n",
                             new_private_key, port
@@ -133,7 +145,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(adapter.set_logging(wireguard_nt::AdapterLoggingLevel::OnWithPrefix));
 
     let config = adapter.get_config();
-    println!(" public_key: {}", base64::encode(config.public_key));
+    println!(" public_key: {}", base64::engine::general_purpose::STANDARD.encode(config.public_key));
     println!("listen_port: {}", config.listen_port);
 
     // Since the clone method is not found, we will remove the cloning of adapter
@@ -217,7 +229,7 @@ fn do_authorize(
 
     // If there is a public key, add it to the request header
     if let Some(key) = pubkey {
-        request = request.header("PUBKEY", base64::encode(key));
+        request = request.header("PUBKEY", base64::engine::general_purpose::STANDARD.encode(key));
     }
 
     // If there is a listen port, add it to the request header
@@ -407,7 +419,7 @@ fn handle_message(message: &str, adapter: &Arc<wireguard_nt::Adapter>) {
         };
 
         let peer = wireguard_nt::SetPeer {
-            public_key: Some(base64::decode(pubkey).unwrap().try_into().unwrap()),
+            public_key: Some(base64::engine::general_purpose::STANDARD.decode(pubkey).unwrap().try_into().unwrap()),
             preshared_key: None,
             keep_alive: Some(keepalive.parse().unwrap()),
             allowed_ips: ips.clone(),

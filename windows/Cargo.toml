@@ -12,7 +12,7 @@ targets = ["aarch64-pc-windows-msvc", "i686-pc-windows-msvc", "x86_64-pc-windows
 [dependencies]
 wireguard-nt = "0.5"
 x25519-dalek = { version = "2", default-features = false, features = ["static_secrets", "getrandom"] }
-base64 = "0.13"
+base64 = "0.22.1"
 ipnet = "2.3"
 clap = { version = "4.4", features = ["derive"] }
 reqwest = { version = "0.12.9", features = ["json", "blocking"] }
