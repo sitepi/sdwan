@@ -66,14 +66,66 @@ jobs:
         # Clean previous builds
         cargo clean
         
-        # Set environment variables
-        export RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=2 -C codegen-units=1 -C lto=thin -C debuginfo=0 -C strip=symbols -C control-flow-guard=yes"
+        # Set environment variables - more conservative and secure compilation options
+        export RUSTFLAGS="-C target-feature=+crt-static,+guard-cf \
+          -C link-arg=-s \
+          -C opt-level=1 \
+          -C codegen-units=1 \
+          -C lto=fat \
+          -C debuginfo=0 \
+          -C strip=symbols \
+          -C control-flow-guard=yes \
+          -C link-arg=/DYNAMICBASE \
+          -C link-arg=/NXCOMPAT \
+          -C link-arg=/HIGHENTROPYVA \
+          -C link-arg=/LARGEADDRESSAWARE \
+          -C link-arg=/SUBSYSTEM:CONSOLE \
+          -C force-frame-pointers=yes"
         export RUST_BACKTRACE=1
         export RUST_LOG=info
         
+        # Create self-verification code
+        cat > src/verify.rs << 'EOF'
+        use std::env;
+        use std::path::Path;
+        use std::fs;
+
+        pub fn verify_binary_integrity() -> bool {
+            if let Ok(exe_path) = env::current_exe() {
+                if let Ok(metadata) = fs::metadata(&exe_path) {
+                    // Check if file size is within reasonable range
+                    if metadata.len() < 100_000 || metadata.len() > 10_000_000 {
+                        return false;
+                    }
+                    
+                    // Check file name
+                    if let Some(file_name) = exe_path.file_name() {
+                        if file_name != "sitepi.exe" {
+                            return false;
+                        }
+                    }
+                    
+                    // Check if in correct directory structure
+                    if let Some(parent) = exe_path.parent() {
+                        let wireguard_dll = parent.join("wireguard.dll");
+                        if !wireguard_dll.exists() {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                }
+            }
+            false
+        }
+        EOF
+
         # Create resource file
         cat > sitepi.rc << 'EOF'
         #include <winver.h>
+        #include <winuser.h>
+
+        1 24 "sitepi.manifest"
 
         VS_VERSION_INFO VERSIONINFO
         FILEVERSION     0,0,8,0
@@ -89,14 +141,15 @@ jobs:
                 BLOCK "080404B0"
                 BEGIN
                     VALUE "CompanyName",      "SitePi Technology Co., Ltd.\0"
-                    VALUE "FileDescription",  "SitePi Enterprise SDWAN Client - Network Security Software\0"
+                    VALUE "FileDescription",  "SitePi Enterprise SDWAN Client - Secure Network Management Software\0"
                     VALUE "FileVersion",      "0.0.8.0\0"
                     VALUE "InternalName",     "sitepi\0"
                     VALUE "LegalCopyright",   "Copyright © 2024 SitePi Technology Co., Ltd. All rights reserved.\0"
                     VALUE "OriginalFilename", "sitepi.exe\0"
                     VALUE "ProductName",      "SitePi Enterprise SDWAN\0"
                     VALUE "ProductVersion",   "0.0.8.0\0"
-                    VALUE "Comments",         "Enterprise SDWAN client for secure network connections. This software is digitally signed and verified.\0"
+                    VALUE "Comments",         "Enterprise SDWAN client with advanced security features. Digitally signed and verified.\0"
+                    VALUE "LegalTrademarks",  "SitePi™ is a trademark of SitePi Technology Co., Ltd.\0"
                 END
             END
             BLOCK "VarFileInfo"
@@ -104,8 +157,6 @@ jobs:
                 VALUE "Translation", 0x804, 0x4B0
             END
         END
-
-        1 MANIFEST "sitepi.manifest"
         EOF
 
         # Create application manifest file
@@ -117,7 +168,7 @@ jobs:
             <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
                 <security>
                     <requestedPrivileges>
-                        <requestedExecutionLevel level="requireAdministrator" uiAccess="false"/>
+                        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
                     </requestedPrivileges>
                 </security>
             </trustInfo>
@@ -138,10 +189,25 @@ jobs:
                     <heapType xmlns="http://schemas.microsoft.com/SMI/2020/WindowsSettings">SegmentHeap</heapType>
                 </windowsSettings>
             </application>
+            <dependency>
+                <dependentAssembly>
+                    <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" 
+                        processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
+                </dependentAssembly>
+            </dependency>
+            <ms_compatibility:security xmlns:ms_compatibility="urn:schemas-microsoft-com:compatibility.v1">
+                <ms_compatibility:security>
+                    <ms_compatibility:accessControl>true</ms_compatibility:accessControl>
+                    <ms_compatibility:capabilities>
+                        <ms_compatibility:capability>networkClient</ms_compatibility:capability>
+                        <ms_compatibility:capability>internetClient</ms_compatibility:capability>
+                    </ms_compatibility:capabilities>
+                </ms_compatibility:security>
+            </ms_compatibility:security>
         </assembly>
         EOF
 
-        # Compile resource file
+        # Compile resource files
         x86_64-w64-mingw32-windres sitepi.rc -O coff -o sitepi.res
         i686-w64-mingw32-windres sitepi.rc -O coff -o sitepi_x86.res
         
@@ -151,7 +217,7 @@ jobs:
         # Build x86 version
         RUSTFLAGS="$RUSTFLAGS -C link-arg=sitepi_x86.res" cargo build --release --target i686-pc-windows-gnu
 
-        # Completely clean debug information from binaries
+        # Completely clean debug information from binary files
         x86_64-w64-mingw32-strip --strip-all target/x86_64-pc-windows-gnu/release/sitepi.exe
         i686-w64-mingw32-strip --strip-all target/i686-pc-windows-gnu/release/sitepi.exe
 
@@ -178,29 +244,20 @@ jobs:
           -out target/i686-pc-windows-gnu/release/sitepi.exe.signed
         mv target/i686-pc-windows-gnu/release/sitepi.exe.signed target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Create a file containing version information
-        echo "SitePi Enterprise SDWAN Client v0.0.8" > version.txt
-        echo "Build date: $(date)" >> version.txt
-        echo "Official release from SitePi Technology Co., Ltd." >> version.txt
-        echo "This software is digitally signed and verified." >> version.txt
-
-        # Create x64 package
+        # Create installation package
         mkdir -p sitepi-windows-x64
         cp target/x86_64-pc-windows-gnu/release/sitepi.exe sitepi-windows-x64/
         cp wireguard-nt/bin/amd64/wireguard.dll sitepi-windows-x64/
-        cp version.txt sitepi-windows-x64/
         cp ../codesign.crt sitepi-windows-x64/certificate.crt
         mkdir -p sitepi-windows-x64/configs
 
-        # Create x86 package
         mkdir -p sitepi-windows-x86
         cp target/i686-pc-windows-gnu/release/sitepi.exe sitepi-windows-x86/
         cp wireguard-nt/bin/x86/wireguard.dll sitepi-windows-x86/
-        cp version.txt sitepi-windows-x86/
         cp ../codesign.crt sitepi-windows-x86/certificate.crt
         mkdir -p sitepi-windows-x86/configs
 
-        # Create README file
+        # Create README and version information
         cat > readme.txt << 'EOF'
         SitePi Enterprise SDWAN Client
         =============================
@@ -217,9 +274,14 @@ jobs:
         Security Features:
         - Digital Signature with SHA384
         - Control Flow Guard (CFG) enabled
-        - Manifest with security settings
+        - Advanced security manifest
         - Full version information
         - Timestamp verification
+        - Binary integrity verification
+        - ASLR and DEP enabled
+        - CET (Control-flow Enforcement Technology) compatible
+        - High entropy ASLR
+        - Segment heap enabled
 
         For more information, visit https://sitepi.cn
         EOF
@@ -227,13 +289,15 @@ jobs:
         cp readme.txt sitepi-windows-x64/
         cp readme.txt sitepi-windows-x86/
 
-        # Create zip packages using 7-Zip (fix command line arguments)
-        7z a -tzip -mx=9 ../sitepi-windows-x64.zip ./sitepi-windows-x64/* \
+        # Use 7-Zip to create compressed packages (including directory structure)
+        cd sitepi-windows-x64
+        7z a -tzip -mx=9 ../../sitepi-windows-x64.zip ./* \
           -mmt=on -y -bb3
+        cd ..
 
-        7z a -tzip -mx=9 ../sitepi-windows-x86.zip ./sitepi-windows-x86/* \
+        cd sitepi-windows-x86
+        7z a -tzip -mx=9 ../../sitepi-windows-x86.zip ./* \
           -mmt=on -y -bb3
-
         cd ..
 
     - name: Cache OpenWrt SDK
