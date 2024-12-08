@@ -3,13 +3,12 @@ name: Build
 on:
   push:
     tags:
-      - 'v*'  # Match all tags starting with v, e.g. v1.0.0
-  workflow_dispatch:  # Keep manual trigger option
+      - 'v*'
+  workflow_dispatch:
 
-# Add permissions configuration
 permissions:
-  contents: write  # Allow workflow to write repository content (including creating releases)
-  packages: write  # Allow package publishing if needed
+  contents: write
+  packages: write
 
 jobs:
   build:
@@ -25,41 +24,61 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
           gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
-          file wget liblua5.1-0-dev lua5.1 luarocks rustc cargo mingw-w64 wine osslsigncode
+          file wget liblua5.1-0-dev lua5.1 luarocks rustc cargo mingw-w64 wine osslsigncode p7zip-full
+
+    - name: Setup Rust
+      run: |
+        rustup set profile minimal
+        rustup default stable
+        rustup update
+        rustup target add x86_64-pc-windows-gnu
+        rustup target add i686-pc-windows-gnu
+        
+        # Ensure the latest toolchain is being used
+        rustup update
+        rustup component add rust-std
+        rustup component add rustc-dev
+        rustup component add llvm-tools-preview
 
     - name: Create Code Signing Certificate
       run: |
         # Generate a stronger self-signed certificate for code signing
         openssl req -x509 -newkey rsa:4096 -keyout codesign.key -out codesign.crt -days 365 -nodes \
-          -subj "/C=CN/ST=Beijing/L=Beijing/O=SitePi Technology/OU=Software Development/CN=sitepi.cn" \
-          -addext "extendedKeyUsage=codeSigning" \
-          -addext "keyUsage=digitalSignature"
+          -subj "/C=CN/ST=Beijing/L=Beijing/O=SitePi Technology Co., Ltd./OU=Software Development/CN=sitepi.cn" \
+          -addext "extendedKeyUsage=codeSigning,clientAuth" \
+          -addext "keyUsage=digitalSignature" \
+          -addext "subjectAltName=DNS:sitepi.cn,DNS:www.sitepi.cn"
 
-        # Convert to PFX format with strong encryption
         openssl pkcs12 -export -out codesign.pfx -inkey codesign.key -in codesign.crt -passout pass:password \
           -certfile codesign.crt -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES
 
     - name: Build Windows package
       run: |
-        rustup default stable
-        rustup update
-        rustup target add x86_64-pc-windows-gnu
-        rustup target add i686-pc-windows-gnu
-
-        # Build Windows version using Rust with security flags
         cd windows
-        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=true -C debuginfo=0 -C strip=symbols" cargo build --release --target x86_64-pc-windows-gnu
-        RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=true -C debuginfo=0 -C strip=symbols" cargo build --release --target i686-pc-windows-gnu
+        
+        # Clean previous builds
+        cargo clean
+        
+        # Set environment variables
+        export RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s -C opt-level=3 -C codegen-units=1 -C lto=thin -C debuginfo=0 -C strip=symbols"
+        export RUST_BACKTRACE=1
+        export RUST_LOG=info
+        
+        # Build x64 version
+        cargo build --release --target x86_64-pc-windows-gnu
+        
+        # Build x86 version
+        cargo build --release --target i686-pc-windows-gnu
 
-        # Strip debug symbols and other metadata
+        # Strip debug information from binary files
         x86_64-w64-mingw32-strip --strip-all target/x86_64-pc-windows-gnu/release/sitepi.exe
         i686-w64-mingw32-strip --strip-all target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Sign the executables with enhanced options
+        # Use a safer signing option
         osslsigncode sign \
           -pkcs12 ../codesign.pfx \
           -pass password \
-          -n "SitePi SDWAN Client" \
+          -n "SitePi Enterprise SDWAN Client" \
           -i "https://sitepi.cn" \
           -h sha384 \
           -t http://timestamp.digicert.com \
@@ -70,7 +89,7 @@ jobs:
         osslsigncode sign \
           -pkcs12 ../codesign.pfx \
           -pass password \
-          -n "SitePi SDWAN Client" \
+          -n "SitePi Enterprise SDWAN Client" \
           -i "https://sitepi.cn" \
           -h sha384 \
           -t http://timestamp.digicert.com \
@@ -78,25 +97,39 @@ jobs:
           -out target/i686-pc-windows-gnu/release/sitepi.exe.signed
         mv target/i686-pc-windows-gnu/release/sitepi.exe.signed target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Create Windows amd64 package
+        # Verify signatures
+        osslsigncode verify target/x86_64-pc-windows-gnu/release/sitepi.exe
+        osslsigncode verify target/i686-pc-windows-gnu/release/sitepi.exe
+
+        # Create a file with version information
+        echo "SitePi Enterprise SDWAN Client v0.0.8" > version.txt
+        echo "Build date: $(date)" >> version.txt
+        echo "Official release from SitePi Technology Co., Ltd." >> version.txt
+
+        # Create x64 package
         mkdir -p sitepi-windows-x64
         cp target/x86_64-pc-windows-gnu/release/sitepi.exe sitepi-windows-x64/
         cp wireguard-nt/bin/amd64/wireguard.dll sitepi-windows-x64/
+        cp version.txt sitepi-windows-x64/
         mkdir -p sitepi-windows-x64/configs
 
-        # Create a zip package for Windows amd64
-        zip -r sitepi-windows-x64.zip sitepi-windows-x64
-        mv sitepi-windows-x64.zip ..
-
-        # Create Windows i686 package
+        # Create x86 package
         mkdir -p sitepi-windows-x86
         cp target/i686-pc-windows-gnu/release/sitepi.exe sitepi-windows-x86/
         cp wireguard-nt/bin/x86/wireguard.dll sitepi-windows-x86/
+        cp version.txt sitepi-windows-x86/
         mkdir -p sitepi-windows-x86/configs
+
+        # Create a compressed package with comments using 7-Zip
+        7z a -tzip -mx=9 ../sitepi-windows-x64.zip ./sitepi-windows-x64/* -mmt=on \
+          -ssc -sse -stl -y -bb3 \
+          -sfx7z.sfx \
+          -z"!SitePi Enterprise SDWAN Client - Official Release"
         
-        # Create a zip package for Windows i686
-        zip -r sitepi-windows-x86.zip sitepi-windows-x86
-        mv sitepi-windows-x86.zip ..
+        7z a -tzip -mx=9 ../sitepi-windows-x86.zip ./sitepi-windows-x86/* -mmt=on \
+          -ssc -sse -stl -y -bb3 \
+          -sfx7z.sfx \
+          -z"!SitePi Enterprise SDWAN Client - Official Release"
 
         cd ..
 
