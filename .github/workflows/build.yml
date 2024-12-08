@@ -71,11 +71,50 @@ jobs:
         export RUST_BACKTRACE=1
         export RUST_LOG=info
         
+        # Create resource file
+        cat > sitepi.rc << 'EOF'
+        #include <winver.h>
+
+        VS_VERSION_INFO VERSIONINFO
+        FILEVERSION     0,0,8,0
+        PRODUCTVERSION  0,0,8,0
+        FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+        FILEFLAGS      0
+        FILEOS         VOS__WINDOWS32
+        FILETYPE       VFT_APP
+        FILESUBTYPE    VFT2_UNKNOWN
+        BEGIN
+            BLOCK "StringFileInfo"
+            BEGIN
+                BLOCK "080404B0"
+                BEGIN
+                    VALUE "CompanyName",      "SitePi Technology Co., Ltd.\0"
+                    VALUE "FileDescription",  "SitePi Enterprise SDWAN Client\0"
+                    VALUE "FileVersion",      "0.0.8.0\0"
+                    VALUE "InternalName",     "sitepi\0"
+                    VALUE "LegalCopyright",   "Copyright © 2024 SitePi Technology Co., Ltd. All rights reserved.\0"
+                    VALUE "OriginalFilename", "sitepi.exe\0"
+                    VALUE "ProductName",      "SitePi Enterprise SDWAN\0"
+                    VALUE "ProductVersion",   "0.0.8.0\0"
+                    VALUE "Comments",         "Enterprise SDWAN client for secure network connections\0"
+                END
+            END
+            BLOCK "VarFileInfo"
+            BEGIN
+                VALUE "Translation", 0x804, 0x4B0
+            END
+        END
+        EOF
+
+        # Compile resource file
+        x86_64-w64-mingw32-windres sitepi.rc -O coff -o sitepi.res
+        
         # Build x64 version
-        cargo build --release --target x86_64-pc-windows-gnu
+        RUSTFLAGS="$RUSTFLAGS -C link-arg=sitepi.res" cargo build --release --target x86_64-pc-windows-gnu
         
         # Build x86 version
-        cargo build --release --target i686-pc-windows-gnu
+        i686-w64-mingw32-windres sitepi.rc -O coff -o sitepi_x86.res
+        RUSTFLAGS="$RUSTFLAGS -C link-arg=sitepi_x86.res" cargo build --release --target i686-pc-windows-gnu
 
         # Completely clean debug information from binaries
         x86_64-w64-mingw32-strip --strip-all target/x86_64-pc-windows-gnu/release/sitepi.exe
@@ -104,7 +143,7 @@ jobs:
           -out target/i686-pc-windows-gnu/release/sitepi.exe.signed
         mv target/i686-pc-windows-gnu/release/sitepi.exe.signed target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Verify signature (using self-signed certificate)
+        # Verify signature
         osslsigncode verify \
           -in target/x86_64-pc-windows-gnu/release/sitepi.exe \
           -CAfile ../ca-chain.crt || true
