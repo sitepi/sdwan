@@ -77,8 +77,6 @@ jobs:
           -C control-flow-guard=yes \
           -C link-arg=-Wl,--dynamicbase \
           -C link-arg=-Wl,--nxcompat \
-          -C link-arg=-Wl,--high-entropy-va \
-          -C link-arg=-Wl,--large-address-aware \
           -C link-arg=-Wl,--subsystem,console"
         export RUST_BACKTRACE=1
         export RUST_LOG=info
