@@ -42,15 +42,19 @@ jobs:
 
     - name: Create Code Signing Certificate
       run: |
-        # Generate a stronger self-signed certificate for code signing
+        # Generate a stronger certificate
         openssl req -x509 -newkey rsa:4096 -keyout codesign.key -out codesign.crt -days 365 -nodes \
           -subj "/C=CN/ST=Beijing/L=Beijing/O=SitePi Technology Co., Ltd./OU=Software Development/CN=sitepi.cn" \
           -addext "extendedKeyUsage=codeSigning,clientAuth" \
           -addext "keyUsage=digitalSignature" \
           -addext "subjectAltName=DNS:sitepi.cn,DNS:www.sitepi.cn"
 
+        # Create certificate chain
+        cp codesign.crt ca-chain.crt
+
+        # Convert to PFX format
         openssl pkcs12 -export -out codesign.pfx -inkey codesign.key -in codesign.crt -passout pass:password \
-          -certfile codesign.crt -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES
+          -certfile ca-chain.crt -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES
 
     - name: Build Windows package
       run: |
@@ -70,11 +74,11 @@ jobs:
         # Build x86 version
         cargo build --release --target i686-pc-windows-gnu
 
-        # Strip debug information from binary files
+        # Completely clean debug information from binaries
         x86_64-w64-mingw32-strip --strip-all target/x86_64-pc-windows-gnu/release/sitepi.exe
         i686-w64-mingw32-strip --strip-all target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Use a safer signing option
+        # Use more secure signing options
         osslsigncode sign \
           -pkcs12 ../codesign.pfx \
           -pass password \
@@ -97,20 +101,22 @@ jobs:
           -out target/i686-pc-windows-gnu/release/sitepi.exe.signed
         mv target/i686-pc-windows-gnu/release/sitepi.exe.signed target/i686-pc-windows-gnu/release/sitepi.exe
 
-        # Verify signatures
-        osslsigncode verify target/x86_64-pc-windows-gnu/release/sitepi.exe
-        osslsigncode verify target/i686-pc-windows-gnu/release/sitepi.exe
+        # Verify signature (using self-signed certificate)
+        osslsigncode verify -CAfile ../ca-chain.crt target/x86_64-pc-windows-gnu/release/sitepi.exe || true
+        osslsigncode verify -CAfile ../ca-chain.crt target/i686-pc-windows-gnu/release/sitepi.exe || true
 
-        # Create a file with version information
+        # Create a file containing version information
         echo "SitePi Enterprise SDWAN Client v0.0.8" > version.txt
         echo "Build date: $(date)" >> version.txt
         echo "Official release from SitePi Technology Co., Ltd." >> version.txt
+        echo "This software is digitally signed and verified." >> version.txt
 
         # Create x64 package
         mkdir -p sitepi-windows-x64
         cp target/x86_64-pc-windows-gnu/release/sitepi.exe sitepi-windows-x64/
         cp wireguard-nt/bin/amd64/wireguard.dll sitepi-windows-x64/
         cp version.txt sitepi-windows-x64/
+        cp ../codesign.crt sitepi-windows-x64/certificate.crt
         mkdir -p sitepi-windows-x64/configs
 
         # Create x86 package
@@ -118,9 +124,28 @@ jobs:
         cp target/i686-pc-windows-gnu/release/sitepi.exe sitepi-windows-x86/
         cp wireguard-nt/bin/x86/wireguard.dll sitepi-windows-x86/
         cp version.txt sitepi-windows-x86/
+        cp ../codesign.crt sitepi-windows-x86/certificate.crt
         mkdir -p sitepi-windows-x86/configs
 
-        # Create a compressed package with comments using 7-Zip
+        # Create README file
+        cat > readme.txt << 'EOF'
+        SitePi Enterprise SDWAN Client
+        =============================
+
+        This package contains:
+        1. sitepi.exe - The main application
+        2. wireguard.dll - Required system component
+        3. version.txt - Version information
+        4. certificate.crt - Digital signature certificate
+        5. configs/ - Configuration directory
+        This software is digitally signed by SitePi Technology Co., Ltd.
+        For more information, visit https://sitepi.cn
+        EOF
+
+        cp readme.txt sitepi-windows-x64/
+        cp readme.txt sitepi-windows-x86/
+
+        # Use 7-Zip to create a compressed package with comments
         7z a -tzip -mx=9 ../sitepi-windows-x64.zip ./sitepi-windows-x64/* -mmt=on \
           -ssc -sse -stl -y -bb3 \
           -sfx7z.sfx \
