@@ -25,6 +25,9 @@ msgstr "インターフェース"
 msgid "Provision Code"
 msgstr "ネットワークトークン"
 
+msgid "Route Auto Load"
+msgstr "ルート自動読み込み"
+
 msgid "Current status of SitePi SDWAN instances"
 msgstr "SitePi SDWAN インスタンスの現在の状態"
 

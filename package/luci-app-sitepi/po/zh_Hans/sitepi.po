@@ -25,6 +25,9 @@ msgstr "接口"
 msgid "Provision Code"
 msgstr "配置代码"
 
+msgid "Route Auto Load"
+msgstr "路由自动加载"
+
 msgid "Current status of SitePi SDWAN instances"
 msgstr "SitePi SDWAN 实例当前状态"
 

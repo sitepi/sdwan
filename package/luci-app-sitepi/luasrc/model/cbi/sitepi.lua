@@ -25,14 +25,14 @@ o.rmempty = false
 o.default = "0"
 o.width = "10%"
 
-o = s:option(Value, "host", translate("Controller"))
+o = s:option(Value, "server", translate("Controller"))
 o.rmempty = true
 o.placeholder = translate("https://sitepi.net")
-o.datatype = "host"
+o.datatype = "server"
 o.validate = function(self, value, section)
     if value and #value > 0 then
         if not value:match("^[a-zA-Z0-9_.-]+$") then
-            return nil, translate("Invalid host format")
+            return nil, translate("Invalid server format")
         end
         return value
     end
@@ -64,11 +64,16 @@ o.validate = function(self, value, section)
 end
 o.width = "20%"
 
-o = s:option(Value, "network_id", translate("Provision Code"))
+o = s:option(Value, "provision", translate("Provision Code"))
 o.rmempty = true
 o.placeholder = translate("Optional")
 o.width = "20%"
 o.password = true
+
+o = s:option(Flag, "route", translate("Route Auto Load"))
+o.rmempty = true
+o.default = "0"
+o.width = "20%"
 
 o = s:option(Value, "description", translate("Description"))
 o.rmempty = true

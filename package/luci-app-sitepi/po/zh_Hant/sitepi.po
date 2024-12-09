@@ -25,6 +25,9 @@ msgstr "介面"
 msgid "Provision Code"
 msgstr "配置權杖"
 
+msgid "Route Auto Load"
+msgstr "路由自動加載"
+
 msgid "Current status of SitePi SDWAN instances"
 msgstr "SitePi SDWAN 執行個體目前狀態"
 

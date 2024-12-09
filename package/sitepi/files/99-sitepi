@@ -16,7 +16,7 @@ config_foreach get_enabled_networks 'network'
 
 get_enabled_networks() {
     local cfg="$1"
-    local enabled name
+    local enabled name provision route
     
     config_get_bool enabled "$cfg" 'enabled' '0'
     [ "$enabled" = "1" ] || return 0
@@ -24,7 +24,15 @@ get_enabled_networks() {
     config_get name "$cfg" 'name'
     [ -n "$name" ] || return 0
     
+    # Get provision and route parameters
+    config_get provision "$cfg" 'provision'
+    config_get route "$cfg" 'route'
+    
     enabled_networks="$enabled_networks $name"
+    
+    # Log provision and route parameters
+    [ -n "$provision" ] && logger -t sitepi "Provision for $name: $provision"
+    [ -n "$route" ] && logger -t sitepi "Route for $name: $route"
 }
 
 if [ -n "$enabled_networks" ]; then

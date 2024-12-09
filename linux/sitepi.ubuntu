@@ -43,17 +43,18 @@ read_config() {
     if [ -f "$config" ]; then
         local enabled=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^enabled/) print \$2}" "$config" | tr -d ' ')
         local interface=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^interface/) print \$2}" "$config" | tr -d ' ')
-        local host=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^host/) print \$2}" "$config" | tr -d ' ')
-        local network_id=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^network_id/) print \$2}" "$config" | tr -d ' ')
-        
+        local server=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^server/) print \$2}" "$config" | tr -d ' ')
+        local provision=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^provision/) print \$2}" "$config" | tr -d ' ')
+        local route=$(awk -F '=' "/^\[$section\]/,/^\[/ {if (\$1 ~ /^route/) print \$2}" "$config" | tr -d ' ')
         # Set default values if not found
         enabled=${enabled:-true}  # 默认启用
         interface=${interface:-wg0}  # 默认接口为 eth0
         
         echo "enabled=$enabled"
         echo "interface=$interface"
-        echo "host=$host"
-        echo "network_id=$network_id"
+        echo "server=$server"
+        echo "provision=$provision"
+        echo "route=$route"
     fi
 }
 
@@ -84,8 +85,9 @@ start_network() {
     
     # Build command
     local cmd="$PROG -i $interface"
-    [ -n "$host" ] && cmd="$cmd -h $host"
-    [ -n "$network_id" ] && cmd="$cmd -n $network_id"
+    [ -n "$server" ] && cmd="$cmd -s $server"
+    [ -n "$provision" ] && cmd="$cmd -p $provision"
+    [ -n "$route" ] && cmd="$cmd -r"
     
     # Start network
     echo -e "${GREEN}Starting network $section...${NC}"
@@ -134,8 +136,9 @@ show_status() {
             echo -e "${RED}no${NC}"
         fi
     fi
-    echo "  Host: ${host:-not set}"
-    echo "  Network ID: ${network_id:-not set}"
+    echo "     Server: ${server:-not set}"
+    echo "  Provision: ${provision:-not set}"
+    echo "      Route: ${route:-not set}"
     echo
 }
 

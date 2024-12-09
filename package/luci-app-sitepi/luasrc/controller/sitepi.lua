@@ -33,9 +33,11 @@ function action_status_data()
                 local instance = {
                     name = s[".name"],  -- 使用配置节的名称
                     interface = s.interface,
-                    host = s.host or "",
+                    server = s.server or "",
+                    provision = s.provision or "", 
                     description = s.description or "",
                     enabled = (s.enabled == "1"),
+                    route = (s.route == "1"),
                     running = false,
                     peers = {},
                     status = "stopped"

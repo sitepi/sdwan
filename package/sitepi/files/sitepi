@@ -4,6 +4,7 @@
 SERVER="https://sitepi.net"
 INTERFACE=""
 PROVISION_CODE=""
+ROUTE_AUTOLOAD=false
 
 # Help information
 show_help() {
@@ -12,6 +13,7 @@ show_help() {
 	echo "	-i, --interface   WireGuard interface name (required)"
 	echo "	-s, --server      Server address (optional)"
 	echo "	-p, --provision   Provisioning Code (optional)"
+	echo "	-r, --route       Route Auto Load (optional)"
 	echo "	--help            Show this help message"
 	echo
 	echo "Example:"
@@ -225,6 +227,10 @@ while [ $# -gt 0 ]; do
 				show_help
 			fi
 			shift 2
+			;;
+		-r|--route)
+			ROUTE_AUTOLOAD=true
+			shift 1
 			;;
 		--help)
 			show_help
@@ -626,14 +632,16 @@ process_message() {
 							continue
 						fi
 						
-						# Delete old route
-						ip route del "$ip" 2>/dev/null
-						
-						# Add new route
-						if ! ip route add "$ip" via "$peer_ip"; then
-							printf "\033[31mError: Failed to add route for %s\033[0m\n" "$ip"
-						else
-							echo "Added route: $ip via $peer_ip"
+						if [ "$ROUTE_AUTOLOAD" = "true" ]; then
+							# Delete old route
+							ip route del "$ip" 2>/dev/null
+							
+							# Add new route
+							if ! ip route add "$ip" via "$peer_ip"; then
+								printf "\033[31mError: Failed to add route for %s\033[0m\n" "$ip"
+							else
+								echo "Added route: $ip via $peer_ip"
+							fi
 						fi
 					done
 					
