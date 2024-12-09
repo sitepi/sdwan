@@ -335,11 +335,13 @@ fn do_connect(
             reqwest::blocking::Client::builder()
                 .proxy(proxy)
                 .timeout(None)
+                .tcp_keepalive(Some(std::time::Duration::from_secs(24)))
                 .build()
                 .expect("Failed to create client with proxy")
         } else {
             reqwest::blocking::Client::builder()
                 .timeout(None)
+                .tcp_keepalive(Some(std::time::Duration::from_secs(24)))
                 .build()
                 .expect("Failed to create client")
         };
