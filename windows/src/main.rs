@@ -1,5 +1,6 @@
 use ipnet::{IpNet, Ipv4Net};
 use rand::Rng;
+use std::error::Error;
 use std::io::BufRead;
 use std::net::Ipv4Addr;
 
@@ -10,9 +11,7 @@ use clap::Parser;
 use std::sync::Mutex;
 
 use winapi::shared::ipmib::MIB_IPFORWARDROW;
-use winapi::um::iphlpapi::{
-    CreateIpForwardEntry, DeleteIpForwardEntry,
-};
+use winapi::um::iphlpapi::{CreateIpForwardEntry, DeleteIpForwardEntry};
 // Add command line arguments struct
 #[derive(Parser)]
 #[command(name = "sitepi")]
@@ -202,7 +201,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 // Change async function to sync function
 fn do_authorize(
-    host: &str,
+    server: &str,
     pubkey: Option<[u8; 32]>,
     listen_port: Option<u16>,
     provision_code: Option<String>,
@@ -210,32 +209,36 @@ fn do_authorize(
     adapter: &Arc<wireguard_nt::Adapter>,
 ) -> Result<(), reqwest::Error> {
     let client = reqwest::blocking::Client::new();
-    let url = if host.starts_with("http") {
-        format!("{}/authorize", host)
+    let url = if server.starts_with("http") {
+        format!("{}/authorize", server)
     } else {
-        format!("{}/authorize", host)
+        format!("{}/authorize", server)
     };
 
-    println!("== Authorizing..");
+    println!(" ============== Authorize ================ ");
 
     let mut request = client.post(url).header("User-Agent", "sitepi");
 
-    // If there is a public key, add it to the request header
+    // Create a vector to hold headers
+    let mut headers = vec![];
+
+    // Add headers conditionally
     if let Some(key) = pubkey {
-        request = request.header(
+        headers.push((
             "PUBKEY",
             base64::engine::general_purpose::STANDARD.encode(key),
-        );
+        ));
     }
-
-    // If there is a listen port, add it to the request header
     if let Some(port) = listen_port {
-        request = request.header("LISTEN-PORT", port.to_string());
+        headers.push(("LISTEN-PORT", port.to_string()));
+    }
+    if let Some(code) = provision_code {
+        headers.push(("PROVISION-CODE", code));
     }
 
-    // If there is a provision code, add it to the request header
-    if let Some(code) = provision_code {
-        request = request.header("PROVISION-CODE", code);
+    // Apply headers to the request
+    for (name, value) in headers {
+        request = request.header(name, value);
     }
 
     let response = request.send()?;
@@ -285,18 +288,20 @@ fn do_authorize(
                     // Create the network from the parsed IP
                     let ipnet = Ipv4Net::new(ip_addr, 24).unwrap();
 
-                    let configs = wireguard_nt::SetInterface {
+                    // Safely modify PEERS using Mutex
+                    let peers = PEERS.lock().unwrap();
+
+                    // Clone peers when creating the interface configuration
+                    let interface = wireguard_nt::SetInterface {
                         listen_port: None,
                         public_key: None,
                         private_key: None,
-                        peers: vec![],
+                        peers: peers.clone(),
                     };
 
                     // Directly use ipnet, no additional conversion needed
-                    match adapter.set_default_route(&[ipnet.into()], &configs) {
-                        Ok(()) => {
-                            // println!(" set address success: {}", ipaddr);
-                        }
+                    match adapter.set_default_route(&[ipnet.into()], &interface) {
+                        Ok(()) => {}
                         Err(err) => panic!("Failed to set address: {}", err),
                     }
 
@@ -306,7 +311,27 @@ fn do_authorize(
         };
 
         set_ip(x_ipaddr);
-        do_connect(x_session, x_url, x_proxy, route, adapter);
+
+        let mut attempt = 0;
+        let max_attempts = 3;
+        let mut base_delay = 1; // reset delay
+
+        // try to connect to the server
+        while attempt < max_attempts {
+            let one_shot = rand::thread_rng().gen_range(800..1200);
+            std::thread::sleep(std::time::Duration::from_millis(base_delay * one_shot)); // Sleep for base delay
+            do_connect(
+                x_session.clone(),
+                x_url.clone(),
+                x_proxy.clone(),
+                route,
+                adapter,
+            );
+
+            attempt += 1;
+            base_delay *= 2;
+        }
+
         Ok(())
     } else {
         Err(response.error_for_status().unwrap_err())
@@ -320,72 +345,70 @@ fn do_connect(
     route: bool,
     adapter: &Arc<wireguard_nt::Adapter>,
 ) {
-    // Add adapter parameter
+    // Check if x_session and x_url are None
+    if x_session.is_none() || x_url.is_none() {
+        println!("Invalid session or URL");
+        return;
+    }
+    
+    println!(" ========================================= ");
 
-    if let Some(url) = x_url {
-        println!("== connect to {}", url);
-        let client = if let Some(proxy) = x_proxy {
-            let proxy = reqwest::Proxy::all(proxy).expect("Invalid proxy URL");
-            reqwest::blocking::Client::builder()
-                .proxy(proxy)
-                .timeout(None)
-                .tcp_keepalive(Some(std::time::Duration::from_secs(24)))
-                .build()
-                .expect("Failed to create client with proxy")
-        } else {
-            reqwest::blocking::Client::builder()
-                .timeout(None)
-                .tcp_keepalive(Some(std::time::Duration::from_secs(24)))
-                .build()
-                .expect("Failed to create client")
-        };
+    let client = if let Some(proxy) = x_proxy {
+        let proxy = reqwest::Proxy::all(proxy).expect("Invalid proxy URL");
+        reqwest::blocking::Client::builder()
+            .proxy(proxy)
+            .timeout(None)
+            .tcp_keepalive(Some(std::time::Duration::from_secs(24)))
+            .build()
+            .expect("Failed to create client with proxy")
+    } else {
+        reqwest::blocking::Client::builder()
+            .timeout(None)
+            .tcp_keepalive(Some(std::time::Duration::from_secs(24)))
+            .build()
+            .expect("Failed to create client")
+    };
 
-        let mut request = client.get(&url).header("User-Agent", "sitepi");
+    let request = client
+        .get(&x_url.unwrap())
+        .header("User-agent", "sitepi")
+        .header("X-Session", x_session.unwrap());
 
-        if let Some(session) = x_session {
-            request = request.header("X-Session", session);
-        }
+    // Send request and handle streaming response
+    match request.send() {
+        Ok(response) => {
+            if response.status().is_success() {
+                // Change: declare reader as mutable
+                let mut reader = std::io::BufReader::new(response);
+                let mut line = String::new();
 
-        // Send request and handle streaming response
-        match request.send() {
-            Ok(response) => {
-                if response.status().is_success() {
-                    // Change: declare reader as mutable
-                    let mut reader = std::io::BufReader::new(response);
-                    let mut line = String::new();
+                // Continuously read lines from the stream
+                loop {
+                    line.clear();
+                    match reader.read_line(&mut line) {
+                        Ok(n) if n > 0 => {
+                            // println!("Read a line: {:?}", line);
+                            let message = line.trim_end();
 
-                    // Continuously read lines from the stream
-                    loop {
-                        line.clear();
-                        match reader.read_line(&mut line) {
-                            Ok(n) if n > 0 => {
-                                // println!("Read a line: {:?}", line);
-                                let message = line.trim_end();
-                                // Process each line (remove trailing newline) and handle it
-                                //if let Some(message) = line.trim_end().is_empty().then(|| line.trim_end()) {
-                                handle_message(message, route, adapter);
-                                //}
-                            }
-                            Ok(_) => {
-                                println!("Connection closed");
-                                break;
-                            }
-                            Err(e) => {
-                                println!("Read error: {:?}", e);
-                                break;
-                            }
+                            handle_message(message, route, adapter);
+                        }
+                        Ok(_) => {
+                            println!("Connection closed");
+                            break;
+                        }
+                        Err(e) => {
+                            println!("Read error: {}", e.source().unwrap().to_string());
+                            break;
                         }
                     }
-                } else {
-                    println!("Connection failed: {:?}", response.status());
                 }
-            }
-            Err(err) => {
-                println!("Request error: {:?}", err);
+            } else {
+                println!("Connection failed: {:?}", response.status());
             }
         }
-    } else {
-        println!(" Invalid URL: {:?}", x_url);
+        Err(err) => {
+            println!("Request error: {:?}", err);
+        }
     }
 }
 
@@ -431,7 +454,13 @@ fn handle_message(message: &str, route: bool, adapter: &Arc<wireguard_nt::Adapte
             endpoint: endpoint.parse().unwrap(),
         };
 
-        println!(" peer: {}", pubkey);
+        let ip_str = if ips.len() > 0 {
+            ips[0].addr().to_string()
+        } else {
+            "[no allowed ip]".to_string()
+        };
+
+        println!("  add peer: {} {} {}", pubkey, endpoint, ip_str);
 
         // Safely modify PEERS using Mutex
         let mut peers = PEERS.lock().unwrap();
@@ -460,7 +489,7 @@ fn handle_message(message: &str, route: bool, adapter: &Arc<wireguard_nt::Adapte
 
             // Extract the IPv4 address from peer_ip IpNet
             if let IpNet::V4(peer_net) = peer_ip {
-                let peer_addr = peer_net.addr();  // Convert to Ipv4Addr
+                let peer_addr = peer_net.addr(); // Convert to Ipv4Addr
 
                 // Iterate over allowed_ips and add routes
                 for dest in &ips {
@@ -469,7 +498,9 @@ fn handle_message(message: &str, route: bool, adapter: &Arc<wireguard_nt::Adapte
                             IpNet::V4(dest_net) => {
                                 println!(" add route for IP: {} via {}", dest_net, peer_addr);
                                 match add_windows_route(*dest_net, peer_addr) {
-                                    Ok(()) => println!("Successfully added route for IP: {}", dest_net),
+                                    Ok(()) => {
+                                        println!("Successfully added route for IP: {}", dest_net)
+                                    }
                                     Err(error_code) => println!(
                                         "Failed to add route for IP: {} with error code: {}",
                                         dest_net, error_code
@@ -499,9 +530,9 @@ fn add_windows_route(dest_net: Ipv4Net, next_hop: Ipv4Addr) -> Result<(), i32> {
         dwForwardMetric5: 0,
         dwForwardAge: 0,
         dwForwardNextHopAS: 0,
-        dwForwardPolicy: 0,     // Default policy
-        ForwardType: 4,         // 4 represents a remote route
-        ForwardProto: 3,        // 3 represents a static route
+        dwForwardPolicy: 0, // Default policy
+        ForwardType: 4,     // 4 represents a remote route
+        ForwardProto: 3,    // 3 represents a static route
     };
 
     // Add the route
@@ -526,9 +557,9 @@ fn del_windows_route(dest_net: Ipv4Net, next_hop: Ipv4Addr) -> Result<(), i32> {
         dwForwardMetric5: 0,
         dwForwardAge: 0,
         dwForwardNextHopAS: 0,
-        dwForwardPolicy: 0,     // Default policy
-        ForwardType: 4,         // 4 represents a remote route
-        ForwardProto: 3,        // 3 represents a static route
+        dwForwardPolicy: 0, // Default policy
+        ForwardType: 4,     // 4 represents a remote route
+        ForwardProto: 3,    // 3 represents a static route
     };
 
     // Delete the route
