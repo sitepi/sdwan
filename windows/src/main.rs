@@ -1,6 +1,6 @@
 use ipnet::{IpNet, Ipv4Net};
 use rand::Rng;
-use std::io::{BufRead};
+use std::io::BufRead;
 use std::net::Ipv4Addr;
 
 use std::sync::Arc;
@@ -26,7 +26,6 @@ struct Cli {
     #[arg(short = 'p', long = "provision")]
     provision: Option<String>,
 }
-
 
 static PEERS: Mutex<Vec<wireguard_nt::SetPeer>> = Mutex::new(Vec::new());
 
@@ -148,62 +147,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(" public_key: {}", base64::engine::general_purpose::STANDARD.encode(config.public_key));
     println!("listen_port: {}", config.listen_port);
 
-    // Since the clone method is not found, we will remove the cloning of adapter
-    // let adapter2 = Arc::clone(&adapter); // Use the original adapter instead of cloning
-                                         // Go to http://demo.wireguard.com/ and see the bandwidth numbers change!
-    // println!("Printing peer bandwidth statistics");
-
-    /*
-    let done = Arc::new(AtomicBool::new(false));
-    let done2 = Arc::clone(&done);
-
-    let thread = std::thread::spawn(move || 'outer: loop {
-        let stats = adapter2.get_config();
-
-        for peer in stats.peers {
-            let handshake_age = peer
-                .last_handshake
-                .map(|h| SystemTime::now().duration_since(h).unwrap_or_default());
-            let handshake_msg = match handshake_age {
-                Some(age) => format!("handshake performed {:.2}s ago", age.as_secs_f32()),
-                None => "no active handshake".to_string(),
-            };
-
-            println!(
-                "  {:?}, {} bytes up, {} bytes down, {handshake_msg}",
-                peer.allowed_ips, peer.tx_bytes, peer.rx_bytes
-            );
-        }
-        for _ in 0..10 {
-            if done2.load(Ordering::Relaxed) {
-                break 'outer;
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
-    });
- */
+    let mut attempt = 0; // Initialize attempt counter
+    let max_attempts = 5; // Set maximum attempts
+    let mut base_delay = 1; // Base delay in seconds
     // Directly call sync function, no runtime needed
     loop {
-        let _ = do_authorize(
-            &_server,
-            Some(config.public_key),
-            Some(config.listen_port),
-            provision_code.clone(),
-            &adapter,
-        );
-        std::thread::sleep(std::time::Duration::from_secs(10)); // Sleep for 5 seconds
+        while attempt < max_attempts {
+            let one_shot = rand::thread_rng().gen_range(800..1200);
+            std::thread::sleep(std::time::Duration::from_millis(base_delay * one_shot)); // Sleep for base delay
+
+            // If the operation is successful, break the loop
+            let _ = do_authorize(
+                &_server,
+                Some(config.public_key),
+                Some(config.listen_port),
+                provision_code.clone(),
+                &adapter,
+            );
+
+            // Increase the base delay for the next attempt
+            base_delay *= 2; // Exponential backoff
+            attempt += 1; // Increment attempt counter
+        }
+
+        attempt = 0;
+        base_delay = 1;
 
         if exit.load(std::sync::atomic::Ordering::Relaxed) {
             break;
         }
     }
-
-    //let mut _buf = [0u8; 32];
-    //let _ = std::io::stdin().read(&mut _buf);
-
-    //done.store(true, Ordering::Relaxed);
-    //thread.join().unwrap();
-    // println!("Exiting!");
 
     Ok(())
 }
@@ -272,9 +245,6 @@ fn do_authorize(
             .map(String::from);
 
         println!(
-            "   SESSION: {}",
-            x_session.as_ref().unwrap_or(&String::new()));
-        println!(
             "  next URL: {}", x_url.as_ref().unwrap_or(&String::new()));
         println!(
             "next PROXY: {}", x_proxy.as_ref().unwrap_or(&String::new()));
@@ -292,7 +262,7 @@ fn do_authorize(
                     // Create the network from the parsed IP
                     let ipnet = Ipv4Net::new(ip_addr, 24).unwrap();
 
-                    let interface_config = wireguard_nt::SetInterface {
+                    let configs = wireguard_nt::SetInterface {
                         listen_port: None,
                         public_key: None,
                         private_key: None,
@@ -300,7 +270,7 @@ fn do_authorize(
                     };
 
                     // Directly use ipnet, no additional conversion needed
-                    match adapter.set_default_route(&[ipnet.into()], &interface_config) {
+                    match adapter.set_default_route(&[ipnet.into()], &configs) {
                         Ok(()) => {
                             // println!(" set address success: {}", ipaddr);
                         }
@@ -399,13 +369,16 @@ fn handle_message(message: &str, adapter: &Arc<wireguard_nt::Adapter>) {
     let data: Vec<&str> = message.split_whitespace().collect();
     // println!("Split data: {:?}", data);
 
+    // Extract action and public key from the data
     let action = data[0];
     let pubkey = data[1];
 
+    // Check if the action is "wg" and the data length is 6
     if action == "wg" && data.len() == 6 {
+        // Initialize endpoint, IP address, and keepalive
         let mut endpoint = data[3];
-        let ip_str = data[4];  // IP地址
-        let mut keepalive = data[5];  // 这个参数实际上是prefix/mask
+        let ip_str = data[4];  // IP address
+        let mut keepalive = data[5];  // This parameter is actually prefix/mask
 
         if endpoint == "x" {
             endpoint = "127.0.0.1:11820";
@@ -430,7 +403,8 @@ fn handle_message(message: &str, adapter: &Arc<wireguard_nt::Adapter>) {
 
         println!(" peer: {}", pubkey);
 
-        // 使用 Mutex 安全地修改 PEERS
+        // Safely modify PEERS using Mutex
+        let mut peers = PEERS.lock().unwrap();
         let mut peers = PEERS.lock().unwrap();
         if !peers.iter().any(|p| p.public_key == peer.public_key) {
             peers.push(peer);
@@ -439,7 +413,8 @@ fn handle_message(message: &str, adapter: &Arc<wireguard_nt::Adapter>) {
             peers.push(peer);
         }
 
-        // 创建接口配置时克隆 peers
+        // Clone peers when creating the interface configuration
+        let peers_clone = peers.clone();
         let interface = wireguard_nt::SetInterface {
             listen_port: None,
             public_key: None,

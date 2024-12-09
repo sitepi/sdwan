@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Default parameters
-HOST="https://sitepi.net"
+SERVER="https://sitepi.net"
 INTERFACE=""
 PROVISION_CODE=""
 
@@ -10,7 +10,7 @@ show_help() {
 	echo "Usage: $0 [options]"
 	echo "Options:"
 	echo "	-i, --interface   WireGuard interface name (required)"
-	echo "	-h, --host        Server address (optional)"
+	echo "	-s, --server      Server address (optional)"
 	echo "	-p, --provision   Provisioning Code (optional)"
 	echo "	--help            Show this help message"
 	echo
@@ -23,8 +23,8 @@ show_help() {
 validate_params() {
 	local errors=0
 
-	if [ -z "$HOST" ]; then
-		echo "Error: Server address (--host) is required"
+	if [ -z "$SERVER" ]; then
+		echo "Error: Server address (--server) is required"
 		errors=$((errors + 1))
 	fi
 
@@ -202,10 +202,10 @@ cleanup() {
 # Parse command line arguments
 while [ $# -gt 0 ]; do
 	case $1 in
-		-h|--host)
-			HOST="$2"
-			if [ -z "$HOST" ]; then
-				echo "Error: --host requires a value"
+		-s|--server)
+			SERVER="$2"
+			if [ -z "$SERVER" ]; then
+				echo "Error: --server requires a value"
 				show_help
 			fi
 			shift 2
@@ -365,7 +365,7 @@ do_authorize() {
 		-H "PUBKEY: $PUBKEY" \
 		-H "LISTEN-PORT: $LISTEN_PORT" \
 		${PROVISION_CODE:+-H "PROVISION-CODE: $PROVISION_CODE"} \
-		"$HOST/authorize" 2>&1)
+		"$SERVER/authorize" 2>&1)
 	status=$?
 	
 	# If IPv6 connection fails, try IPv4
@@ -376,13 +376,13 @@ do_authorize() {
 			-H "PUBKEY: $PUBKEY" \
 			-H "LISTEN-PORT: $LISTEN_PORT" \
 			${PROVISION_CODE:+-H "PROVISION-CODE: $PROVISION_CODE"} \
-			"$HOST/authorize" 2>&1)
+			"$SERVER/authorize" 2>&1)
 		status=$?
 	fi
 	
 	if [ $status -ne 0 ]; then
 		printf "\033[31mError: Connection failed\033[0m\n"
-		echo "Failed to connect to $HOST"
+		echo "Failed to connect to $SERVER"
 		clear_session
 		return 1
 	fi
