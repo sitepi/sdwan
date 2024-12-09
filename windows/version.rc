@@ -9,12 +9,12 @@ BLOCK "040904E4"
 BEGIN
 VALUE "CompanyName",      "SitePi\0"
 VALUE "FileDescription",  "SitePi SDWAN Client\0"
-VALUE "FileVersion",      "0.0.8\0"
+VALUE "FileVersion",      "0.0.9\0"
 VALUE "InternalName",     "sitepi.exe\0"
 VALUE "LegalCopyright",   "Copyright (C) SitePi\0"
 VALUE "OriginalFilename", "sitepi.exe\0"
 VALUE "ProductName",      "SitePi SDWAN\0"
-VALUE "ProductVersion",   "0.0.8\0"
+VALUE "ProductVersion",   "0.0.9\0"
 END
 END
 BLOCK "VarFileInfo"

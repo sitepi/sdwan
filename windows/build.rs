@@ -15,8 +15,8 @@ fn main() {
         }
         
         // 设置版本信息和详细元数据
-        res.set("FileVersion", "0.0.8.0")
-           .set("ProductVersion", "0.0.8.0")
+        res.set("FileVersion", "0.0.9.0")
+           .set("ProductVersion", "0.0.9.0")
            .set("FileDescription", "SitePi Enterprise SDWAN Client")
            .set("ProductName", "SitePi Enterprise SDWAN")
            .set("OriginalFilename", "sitepi.exe")

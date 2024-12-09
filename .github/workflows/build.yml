@@ -101,12 +101,12 @@ jobs:
                 BEGIN
                     VALUE "CompanyName",      "SitePi Technology Co., Ltd.\0"
                     VALUE "FileDescription",  "SitePi Enterprise SDWAN Client\0"
-                    VALUE "FileVersion",      "0.0.8.0\0"
+                    VALUE "FileVersion",      "0.0.9.0\0"
                     VALUE "InternalName",     "sitepi\0"
                     VALUE "LegalCopyright",   "Copyright © 2024 SitePi Technology Co., Ltd.\0"
                     VALUE "OriginalFilename", "sitepi.exe\0"
                     VALUE "ProductName",      "SitePi Enterprise SDWAN\0"
-                    VALUE "ProductVersion",   "0.0.8.0\0"
+                    VALUE "ProductVersion",   "0.0.9.0\0"
                     VALUE "Comments",         "Enterprise SDWAN client for secure network connections\0"
                 END
             END
@@ -121,7 +121,7 @@ jobs:
         cat > sitepi.manifest << 'EOF'
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-            <assemblyIdentity version="0.0.8.0" processorArchitecture="*" name="SitePi.Enterprise.SDWAN" type="win32"/>
+            <assemblyIdentity version="0.0.9.0" processorArchitecture="*" name="SitePi.Enterprise.SDWAN" type="win32"/>
             <description>SitePi Enterprise SDWAN Client</description>
             <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
                 <security>
@@ -381,7 +381,7 @@ jobs:
           ```
           ${{ steps.sha.outputs.SUMS }}
           ```
-          **Full Changelog**: https://github.com/sitepi/sdwan/compare/v0.0.6...v0.0.8
+          **Full Changelog**: https://github.com/sitepi/sdwan/compare/v0.0.8...v0.0.9
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

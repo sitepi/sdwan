@@ -18,8 +18,8 @@
 sudo apt update
 sudo apt install -y wireguard-tools curl
 
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.8/sitepi_0.0.8_all.deb
-sudo dpkg -i sitepi_0.0.8_all.deb
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.9/sitepi_0.0.9_all.deb
+sudo dpkg -i sitepi_0.0.9_all.deb
 
 sudo systemctl enable sitepi.service
 ```
@@ -34,11 +34,11 @@ sudo service sitepi {status|start|stop|restart}
 ### OpenWrt
 ```bash
 cd /tmp
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.8/sitepi_0.0.8_all.ipk
-wget https://github.com/sitepi/sdwan/releases/download/v0.0.8/luci-app-sitepi_0.0.8_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.9/sitepi_0.0.9_all.ipk
+wget https://github.com/sitepi/sdwan/releases/download/v0.0.9/luci-app-sitepi_0.0.9_all.ipk
 
-opkg install sitepi_0.0.8_all.ipk
-opkg install luci-app-sitepi_0.0.8_all.ipk
+opkg install sitepi_0.0.9_all.ipk
+opkg install luci-app-sitepi_0.0.9_all.ipk
 ```
 
 - 安装文件架构是平台无关的。所有路由器使用相同的ipk。
