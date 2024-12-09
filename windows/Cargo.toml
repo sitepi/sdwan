@@ -23,6 +23,7 @@ clap = { version = "4.4", features = ["derive"] }
 reqwest = { version = "0.12.9", features = ["json", "blocking", "default-tls"], default-features = false }
 rand = { version = "0.8", features = ["std", "std_rng"], default-features = false }
 ctrlc = "3.4"
+winapi = { version = "0.3", features = ["iphlpapi"] }
 
 [build-dependencies]
 winres = "0.1"
