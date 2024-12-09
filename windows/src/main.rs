@@ -454,7 +454,7 @@ fn handle_message(message: &str, route: bool, adapter: &Arc<wireguard_nt::Adapte
         // This lets it know about the peers and keys
         adapter.set_config(&interface).unwrap();
 
-        if route {
+        if route && ips.len() > 1 {
             // The first in ips is the peer IP
             let peer_ip = ips[0];
 
