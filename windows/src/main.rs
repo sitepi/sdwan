@@ -6,6 +6,7 @@ use std::net::Ipv4Addr;
 
 use std::sync::Arc;
 // use ipnet::{Ipv4Net};
+use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use clap::Parser;
 use std::sync::Mutex;
@@ -100,9 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 if parts.len() >= 2 {
                                     let private_key = parts[1].trim().to_owned() + "=";
 
-                                    match base64::engine::general_purpose::STANDARD
-                                        .decode(private_key)
-                                    {
+                                    match BASE64.decode(private_key) {
                                         Ok(decoded_key) => {
                                             if decoded_key.len() == 32 {
                                                 private_bytes.copy_from_slice(&decoded_key);
@@ -128,8 +127,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("no {}.conf found, create it", interface);
                         // Generate a random port number between 1024 and 65535
                         port = rand::thread_rng().gen_range(1024..65535);
-                        let new_private_key =
-                            base64::engine::general_purpose::STANDARD.encode(&private_bytes);
+                        let new_private_key = BASE64.encode(&private_bytes);
                         let new_config = format!(
                             "[Interface]\nPrivateKey = {}\nListenPort = {}\n",
                             new_private_key, port
@@ -158,10 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(adapter.set_logging(wireguard_nt::AdapterLoggingLevel::OnWithPrefix));
 
     let config = adapter.get_config();
-    println!(
-        " public_key: {}",
-        base64::engine::general_purpose::STANDARD.encode(config.public_key)
-    );
+    println!(" public_key: {}", BASE64.encode(config.public_key));
     println!("listen_port: {}", config.listen_port);
 
     let mut attempt = 0; // Initialize attempt counter
@@ -224,10 +219,7 @@ fn do_authorize(
 
     // Add headers conditionally
     if let Some(key) = pubkey {
-        headers.push((
-            "PUBKEY",
-            base64::engine::general_purpose::STANDARD.encode(key),
-        ));
+        headers.push(("PUBKEY", BASE64.encode(key)));
     }
     if let Some(port) = listen_port {
         headers.push(("LISTEN-PORT", port.to_string()));
@@ -350,7 +342,7 @@ fn do_connect(
         println!("Invalid session or URL");
         return;
     }
-    
+
     println!(" ========================================= ");
 
     let client = if let Some(proxy) = x_proxy {
@@ -418,18 +410,18 @@ fn handle_message(message: &str, route: bool, adapter: &Arc<wireguard_nt::Adapte
 
     // Extract action and public key from the data
     let action = data[0];
-    let pubkey = data[1];
+    let public_key = data[1];
 
     // Check if the action is "wg" and the data length is 6
     if action == "wg" && data.len() == 6 {
         // Initialize endpoint, IP address, and keepalive
         let mut endpoint = data[3];
         let ip_str = data[4]; // IP address
-        let mut keepalive = data[5];
+        let mut persistent_keepalive = data[5];
 
-        if endpoint == "x" {
-            endpoint = "127.0.0.1:11820";
-            keepalive = "0";
+        if endpoint == "x" || endpoint == "" {
+            endpoint = "0.0.0.0:0";
+            persistent_keepalive = "0";
         }
 
         // If the IP is not 'x', create an IpNet
@@ -441,15 +433,9 @@ fn handle_message(message: &str, route: bool, adapter: &Arc<wireguard_nt::Adapte
         };
 
         let peer = wireguard_nt::SetPeer {
-            public_key: Some(
-                base64::engine::general_purpose::STANDARD
-                    .decode(pubkey)
-                    .unwrap()
-                    .try_into()
-                    .unwrap(),
-            ),
+            public_key: Some(BASE64.decode(public_key).unwrap().try_into().unwrap()),
             preshared_key: None,
-            keep_alive: Some(keepalive.parse().unwrap()),
+            keep_alive: Some(persistent_keepalive.parse().unwrap()),
             allowed_ips: ips.clone(),
             endpoint: endpoint.parse().unwrap(),
         };
@@ -460,7 +446,7 @@ fn handle_message(message: &str, route: bool, adapter: &Arc<wireguard_nt::Adapte
             "[no allowed ip]".to_string()
         };
 
-        println!("  add peer: {} {} {}", pubkey, endpoint, ip_str);
+        println!("  add peer: {} {} {}", public_key, endpoint, ip_str);
 
         // Safely modify PEERS using Mutex
         let mut peers = PEERS.lock().unwrap();
