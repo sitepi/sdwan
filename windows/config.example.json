@@ -1,0 +1,11 @@
+{
+  "server": "https://sitepi.cn",
+  "interface": "wg0",
+  "provision_code": null,
+  "auto_route": true,
+  "log_level": "info",
+  "reconnect_config": {
+    "max_attempts": 5,
+    "base_delay_ms": 1000
+  }
+}
